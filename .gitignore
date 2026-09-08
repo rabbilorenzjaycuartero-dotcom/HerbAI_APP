@@ -1,0 +1,25 @@
+# Secrets - never commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Large assets not needed at runtime (images now live in Supabase Storage;
+# api_server.py only reads "HERBAL_DB - Sheet5_final.csv" and
+# herbal_preprocessed_1.csv, not the other sheets/raw exports below)
+herb_images/
+HERBAL_DB - Sheet1.csv
+HERBAL_DB - Sheet2.csv
+HERBAL_DB - Sheet3.csv
+HERBAL_DB data_image.xlsx
+HERBAL_DB_final.xlsx
+
+# Old experiment snapshots - only the active model is needed to deploy
+models/herb_relevance_model.joblib
+models/herb_relevance_model_v1.joblib
+models/herb_relevance_model_v2.joblib
+models/herb_relevance_model_v3.joblib
+models/herb_relevance_model_xgb_v1.joblib
+models/herb_relevance_model_xgb_v2.joblib
+models/herb_relevance_model_xgb_v3.joblib
