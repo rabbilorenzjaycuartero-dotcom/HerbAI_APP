@@ -1,0 +1,42 @@
+Firebase cleanup report
+=======================
+Date: 2026-07-10
+Status: Prepared for fresh Firebase re-setup
+
+Summary
+-------
+Removed direct Firebase initialization from the Flutter app entry point, stripped the old Google Services plugin from Android Gradle config, removed the Firebase dependency declarations from pubspec.yaml, and replaced the auth service with a neutral stub so the UI remains intact without the old project connection.
+
+Files modified
+--------------
+- lib/main.dart
+- lib/services/firebase_auth_service.dart
+- lib/screens/login_screen.dart
+- lib/screens/register_screen.dart
+- lib/screens/forgot_password_screen.dart
+- lib/screens/email_verification_screen.dart
+- lib/screens/profile_screen.dart
+- pubspec.yaml
+- android/app/build.gradle.kts
+- android/settings.gradle.kts
+
+Files deleted
+-------------
+- None yet. The old Firebase config artifact remains at android/app/google-services.json and should be removed manually if you want it fully out of the repo.
+
+Remaining Firebase dependencies
+------------------------------
+- pubspec.lock still contains cached Firebase package entries until dependencies are fully refreshed.
+- android/app/google-services.json still exists and contains the old project credentials.
+- Generated Android build outputs may still contain Firebase references from prior builds.
+
+Manual cleanup still needed
+---------------------------
+- Delete android/app/google-services.json.
+- If present, remove any firebase_options.dart file from lib/ or android/.
+- Optionally run flutter clean and remove build/ artifacts.
+- Re-run Flutter dependency resolution after the project is confirmed in a working shell.
+
+Ready for fresh Firebase setup?
+--------------------------------
+Yes. The app code no longer initializes the old Firebase project and the screens remain intact, so it is prepared to connect to a brand-new Firebase project.

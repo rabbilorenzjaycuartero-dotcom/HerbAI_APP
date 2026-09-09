@@ -1,0 +1,328 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/plant_model.dart';
+import '../providers/plant_provider.dart';
+import '../core/app_theme.dart';
+import '../core/mock_data.dart';
+import '../widgets/custom_appbar.dart';
+import '../widgets/rating_widget.dart';
+
+class PlantDetailsScreen extends StatelessWidget {
+  final Plant plant;
+
+  const PlantDetailsScreen({
+    super.key,
+    required this.plant,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final plantProvider = Provider.of<PlantProvider>(context);
+    final reviews = MockData.getReviews();
+
+    return Scaffold(
+      appBar: CustomAppBar(
+        actions: [
+          IconButton(
+            icon: Icon(
+              plantProvider.isFavorite(plant)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              color: plantProvider.isFavorite(plant) ? Colors.red : null,
+            ),
+            onPressed: () {
+              plantProvider.toggleFavorite(plant);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildPlantImage(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPlantHeader(),
+                  const SizedBox(height: 8),
+                  RatingWidget(rating: plant.rating, showText: true),
+                  const SizedBox(height: 24),
+                  _buildDescription(),
+                  const SizedBox(height: 24),
+                  _buildSection('Medicinal Uses', plant.medicinalUses, Icons.healing),
+                  const SizedBox(height: 24),
+                  _buildSection('Preparation Methods', plant.preparationMethods, Icons.medical_services),
+                  const SizedBox(height: 24),
+                  _buildSafetyWarnings(),
+                  const SizedBox(height: 24),
+                  _buildEthnobotanicalInfo(),
+                  const SizedBox(height: 24),
+                  _buildReviewsSection(reviews),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlantImage() {
+    // Image.network throws synchronously (before errorBuilder can catch it)
+    // when given an empty URL, which is the neutral default for herbs with
+    // no gathered image data -- so an empty url skips straight to fallback.
+    final fallback = Container(
+      height: 300,
+      color: AppTheme.primaryLight,
+      child: const Center(
+        child: Icon(Icons.eco, size: 100, color: Colors.white),
+      ),
+    );
+    return Stack(
+      children: [
+        if (plant.imageUrl.isEmpty)
+          fallback
+        else
+          Image.network(
+            plant.imageUrl,
+            height: 300,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => fallback,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPlantHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          plant.name,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          plant.scientificName,
+          style: TextStyle(
+            fontSize: 16,
+            color: AppTheme.textSecondary,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescription() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Description',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          plant.description,
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection(String title, List<String> items, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: AppTheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6, right: 12),
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+      ],
+    );
+  }
+
+  Widget _buildSafetyWarnings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.warning_amber, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text(
+              'Safety Warnings',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Card(
+          color: Colors.orange.withValues(alpha: 0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: plant.safetyWarnings.map((warning) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      '• $warning',
+                      style: const TextStyle(height: 1.4),
+                    ),
+                  )).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEthnobotanicalInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Traditional Knowledge',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          color: AppTheme.primary.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              plant.ethnobotanicalInfo,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewsSection(List<Review> reviews) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Reviews',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...reviews.map((review) => Card(
+              margin: const EdgeInsets.only(bottom: 12.0),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppTheme.primaryLight,
+                          child: const Icon(Icons.person, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                review.userName,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '${review.date.day}/${review.date.month}/${review.date.year}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        RatingWidget(rating: review.rating, starSize: 14),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      review.comment,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )),
+      ],
+    );
+  }
+}
