@@ -59,12 +59,25 @@ def _list_all_bucket_files(bucket, page_size=1000):
 
 
 print("Connecting to Supabase Storage...")
-supabase_client = create_client(
-    os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"]
-)
-supabase_bucket = supabase_client.storage.from_(os.environ["SUPABASE_BUCKET"])
-_available_images = set(_list_all_bucket_files(supabase_bucket))
-print(f"{len(_available_images)} image(s) available in Supabase Storage.")
+supabase_bucket = None
+_available_images = set()
+try:
+    supabase_client = create_client(
+        os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    )
+    supabase_bucket = supabase_client.storage.from_(os.environ["SUPABASE_BUCKET"])
+    _available_images = set(_list_all_bucket_files(supabase_bucket))
+    print(f"{len(_available_images)} image(s) available in Supabase Storage.")
+except Exception as error:
+    # Herb photos are a nice-to-have (_image_url already falls back to ""
+    # for any herb without one, which the Flutter app renders as a plain
+    # icon) -- they shouldn't be a hard dependency for the whole API. With
+    # supabase_bucket left None and _available_images empty, every route
+    # below still works, just without photos, instead of the process
+    # dying before a single Flask route is registered.
+    supabase_bucket = None
+    _available_images = set()
+    print(f"WARNING: Supabase Storage unavailable ({error!r}); continuing without herb photos.")
 
 print("Loading model bundle...")
 bundle = joblib.load(MODEL_PATH)
@@ -149,7 +162,7 @@ def _herb_to_json(pos, rec, relevance_score=None):
 
 @app.route("/images/<path:filename>", methods=["GET"])
 def get_image(filename):
-    if filename not in _available_images:
+    if supabase_bucket is None or filename not in _available_images:
         return "Not found", 404
     data = supabase_bucket.download(filename)
     content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
