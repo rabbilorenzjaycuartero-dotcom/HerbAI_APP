@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 import joblib
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score
 import warnings
 warnings.filterwarnings("ignore")
@@ -101,6 +101,58 @@ def build_examples(M, rng, genus_freq, pmi):
     return np.stack(feats_list), np.array(y_list)
 
 
+def _score_all_herbs(clf, M, genus_freq, pmi, query_indices):
+    """Score every herb against a list of query symptom column indices,
+    using the same masked-averaging procedure recommend_herbs() serves to
+    the app. Shared by recommend_herbs() (string-based, real queries) and
+    query_level_eval() (index-based, realistic ranking eval)."""
+    n_herbs, n_symptoms = M.shape
+    scores = np.zeros(n_herbs)
+    for j in query_indices:
+        feats = M.copy()
+        feats[:, j] = 0
+        n_present = np.maximum(feats.sum(axis=1), 1)
+        co_scores = (feats @ pmi[j]) / n_present
+        onehot = np.zeros((n_herbs, n_symptoms))
+        onehot[:, j] = 1
+        X = np.column_stack([feats, onehot, genus_freq, co_scores])
+        scores += clf.predict_proba(X)[:, 1]
+    scores /= len(query_indices)
+    return scores
+
+
+def query_level_eval(clf, M, genus_freq, pmi, rng, n_queries=300, top_ks=(5, 10)):
+    """Realistic ranking eval: for sampled herbs, hold out a random half of
+    that herb's OWN symptoms as a synthetic query, score every herb with
+    _score_all_herbs() (the exact procedure the app uses at serving time),
+    and check whether the source herb resurfaces near the top.
+
+    This directly measures "if I pick symptoms belonging to herb X, does X
+    actually come back near the top" -- the behavior users actually judge
+    the app on -- unlike pairwise ROC-AUC on independent (herb, symptom)
+    examples, which never tests whether the query-averaging step works.
+    """
+    n_herbs = M.shape[0]
+    eligible = np.where(M.sum(axis=1) >= 2)[0]
+    sample_size = min(n_queries, len(eligible))
+    sampled = rng.choice(eligible, size=sample_size, replace=False)
+
+    ranks = []
+    for i in sampled:
+        present = np.where(M[i] == 1)[0]
+        n_query = max(1, len(present) // 2)
+        query_idx = rng.choice(present, size=n_query, replace=False)
+        scores = _score_all_herbs(clf, M, genus_freq, pmi, query_idx)
+        rank = int((-scores).argsort().argsort()[i]) + 1  # 1-indexed
+        ranks.append(rank)
+
+    ranks = np.array(ranks)
+    result = {"mrr": float(np.mean(1.0 / ranks))}
+    for k in top_ks:
+        result[f"recall@{k}"] = float(np.mean(ranks <= k))
+    return result
+
+
 def cross_validate(X, y, param_overrides=None, n_splits=5):
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
     accs, aucs = [], []
@@ -115,25 +167,53 @@ def cross_validate(X, y, param_overrides=None, n_splits=5):
     return np.array(accs), np.array(aucs)
 
 
-def tune_hyperparams(X, y):
-    """Modest randomized search over RF hyperparameters."""
+def tune_hyperparams(X, y, M, genus_freq, pmi, rng):
+    """Randomized search over RF hyperparameters, shortlisted by pairwise
+    ROC-AUC (cheap, keeps the search fast), then re-ranked among the top
+    candidates by the realistic query_level_eval -- since pairwise AUC
+    doesn't measure whether the query-averaging procedure actually surfaces
+    the right herb (see module docstring / query_level_eval docstring).
+    """
     param_dist = {
-        "n_estimators": [200, 300, 400],
-        "max_depth": [None, 12, 20, 30],
+        "n_estimators": [200, 300, 400, 600, 800],
+        "max_depth": [None, 12, 20, 30, 40],
         "min_samples_leaf": [1, 2, 4],
+        "min_samples_split": [2, 5, 10],
         "max_features": ["sqrt", "log2", 0.5],
+        "class_weight": [None, "balanced"],
     }
     search = RandomizedSearchCV(
         RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=2),
         param_distributions=param_dist,
-        n_iter=10,
+        n_iter=20,
         cv=3,
         scoring="roc_auc",
         random_state=RANDOM_STATE,
         n_jobs=1,
     )
     search.fit(X, y)
-    return search.best_params_
+
+    shortlist = (
+        pd.DataFrame(search.cv_results_)
+        .nlargest(3, "mean_test_score")["params"]
+        .tolist()
+    )
+
+    X_train, _, y_train, _ = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
+    )
+
+    print("\nRe-ranking top-3 candidates by realistic query-level eval (Recall@5)...")
+    best_params, best_recall5 = None, -1.0
+    for params in shortlist:
+        clf = RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=2, **params)
+        clf.fit(X_train, y_train)
+        metrics = query_level_eval(clf, M, genus_freq, pmi, rng, n_queries=150)
+        print(f"  {params} -> Recall@5={metrics['recall@5']:.3f}  MRR={metrics['mrr']:.3f}")
+        if metrics["recall@5"] > best_recall5:
+            best_recall5, best_params = metrics["recall@5"], params
+
+    return best_params
 
 
 def main():
@@ -152,7 +232,7 @@ def main():
     print(f"Feature dims: {X.shape[1]} (196 masked profile + 196 one-hot symptom + genus_freq + co-occurrence)")
 
     print("\nTuning hyperparameters (RandomizedSearchCV, 3-fold)...")
-    best_params = tune_hyperparams(X, y)
+    best_params = tune_hyperparams(X, y, M, genus_freq, pmi, rng)
     print(f"Best params: {best_params}")
 
     print("\nCross-validating (5-fold, stratified) with best params...")
@@ -163,6 +243,15 @@ def main():
     print("\nFitting final model on all data...")
     clf = RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=2, **best_params)
     clf.fit(X, y)
+
+    print("\nRealistic query-level eval on the final model (does the right herb")
+    print("resurface when queried with its own symptoms)...")
+    query_metrics = query_level_eval(clf, M, genus_freq, pmi, rng, n_queries=300)
+    print(
+        f"Recall@5={query_metrics['recall@5']:.3f}  "
+        f"Recall@10={query_metrics['recall@10']:.3f}  "
+        f"MRR={query_metrics['mrr']:.3f}"
+    )
 
     joblib.dump(
         {
@@ -184,7 +273,6 @@ def recommend_herbs(bundle, query_symptoms, top_n=5):
     M, meta = bundle["herb_matrix"], bundle["herb_meta"]
     genus_freq, pmi = bundle["genus_freq"], bundle["pmi"]
     symptom_to_idx = {s: i for i, s in enumerate(symptom_cols)}
-    n_herbs, n_symptoms = M.shape
 
     valid_q = [s for s in query_symptoms if s in symptom_to_idx]
     unknown = [s for s in query_symptoms if s not in symptom_to_idx]
@@ -193,18 +281,8 @@ def recommend_herbs(bundle, query_symptoms, top_n=5):
     if not valid_q:
         return pd.DataFrame()
 
-    scores = np.zeros(n_herbs)
-    for q in valid_q:
-        j = symptom_to_idx[q]
-        feats = M.copy()
-        feats[:, j] = 0
-        n_present = np.maximum(feats.sum(axis=1), 1)
-        co_scores = (feats @ pmi[j]) / n_present
-        onehot = np.zeros((n_herbs, n_symptoms))
-        onehot[:, j] = 1
-        X = np.column_stack([feats, onehot, genus_freq, co_scores])
-        scores += clf.predict_proba(X)[:, 1]
-    scores /= len(valid_q)
+    query_indices = [symptom_to_idx[q] for q in valid_q]
+    scores = _score_all_herbs(clf, M, genus_freq, pmi, query_indices)
 
     result = meta.copy()
     result["relevance_score"] = scores

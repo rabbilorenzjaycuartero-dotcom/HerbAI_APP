@@ -9,6 +9,14 @@ Endpoints:
     GET  /plants         -> all herbs, for browse/search screens
     GET  /images/<file>  -> serves photos extracted by extract_images.py
 
+/recommend excludes herbs flagged dangerous in their Precautions text unless
+the model's relevance score clears a high confidence bar -- see
+herb_safety.py (shared with try_symptom_extractor.py so the same rule
+applies wherever recommendations are generated) for the full rationale:
+found necessary after a real case where a rare single-symptom query
+("toothache", only 20 tagged herbs) ranked a poisonous, actually-unrelated
+herb #1 ahead of the genuinely correct, well-labeled matches.
+
 Every herb JSON object matches the Flutter `Plant` model's fields exactly.
 Fields not present in the gathered data (rating, reviewCount, categories,
 availability, isDohRecognized, isEasyToPrepare) get the same neutral
@@ -34,10 +42,15 @@ from flask_cors import CORS
 from supabase import create_client
 
 from train_herb_relevance_model_xgb import recommend_herbs
+from train_symptom_extractor import extract_symptoms_from_text
+from symptom_spelling import build_symptom_words, spelling_suggestions
+from herb_safety import is_flagged_dangerous, DANGER_CONFIDENCE_THRESHOLD
 
 load_dotenv()
 
 MODEL_PATH = "models/herb_relevance_model_xgb.joblib"
+EXTRACTOR_PATH = "models/symptom_extractor.joblib"
+MAX_SYMPTOM_TEXT_LENGTH = 500
 RAW_CSV = "HERBAL_DB - Sheet5_final.csv"
 PREPROCESSED_CSV = "herbal_preprocessed_1.csv"
 
@@ -82,6 +95,8 @@ except Exception as error:
 print("Loading model bundle...")
 bundle = joblib.load(MODEL_PATH)
 symptom_cols = bundle["symptom_cols"]
+extractor_bundle = joblib.load(EXTRACTOR_PATH)
+symptom_words = build_symptom_words(extractor_bundle["symptom_cols"])
 
 raw_df = pd.read_csv(RAW_CSV)
 raw_df = raw_df.loc[:, ~raw_df.columns.str.match(r"^Unnamed")]
@@ -179,13 +194,34 @@ def get_plants():
     return jsonify([_herb_to_json(pos, rec) for pos, rec in meta_by_pos.items()])
 
 
+@app.route("/extract_symptoms", methods=["POST"])
+def post_extract_symptoms():
+    data = request.get_json(force=True) or {}
+    text = str(data.get("text", "")).strip()
+    if len(text) > MAX_SYMPTOM_TEXT_LENGTH:
+        return jsonify({"error": f"text must be {MAX_SYMPTOM_TEXT_LENGTH} characters or fewer"}), 400
+    if not text:
+        return jsonify({"symptoms": [], "spellingSuggestions": []})
+
+    return jsonify({
+        "symptoms": extract_symptoms_from_text(extractor_bundle, text),
+        "spellingSuggestions": [
+            {"typed": wrong, "suggestion": right}
+            for wrong, right in spelling_suggestions(text, symptom_words)
+        ],
+    })
+
+
 @app.route("/recommend", methods=["POST"])
 def post_recommend():
     data = request.get_json(force=True) or {}
     symptoms = data.get("symptoms", [])
     top_n = int(data.get("topN", 10))
 
-    result_df = recommend_herbs(bundle, symptoms, top_n=top_n)
+    # Fetch a larger candidate pool than requested so filtering out
+    # low-confidence dangerous herbs below can still leave top_n results,
+    # instead of truncating first and losing the chance to backfill.
+    result_df = recommend_herbs(bundle, symptoms, top_n=max(top_n * 5, 50))
     if result_df.empty:
         return jsonify([])
 
@@ -194,7 +230,12 @@ def post_recommend():
         rec = meta_by_pos.get(pos)
         if rec is None:
             continue
-        out.append(_herb_to_json(pos, rec, relevance_score=float(row["relevance_score"])))
+        score = float(row["relevance_score"])
+        if is_flagged_dangerous(rec.get("Precautions")) and score < DANGER_CONFIDENCE_THRESHOLD:
+            continue
+        out.append(_herb_to_json(pos, rec, relevance_score=score))
+        if len(out) >= top_n:
+            break
     return jsonify(out)
 
 

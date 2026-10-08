@@ -42,6 +42,51 @@ JUNK_MARKERS = [
     "highly restricted", "safety has not", "is not", "where its",
 ]
 
+# Trailing qualifier clauses that end up stuck to a real symptom because the
+# source text has no comma to split on (e.g. "digestive discomfort in coastal
+# folk medicine") -- stripped and merged into the base symptom, not dropped.
+QUALIFIER_SUFFIX_PATTERN = re.compile(
+    r"\s+in\s+(?:some\s+|coastal\s+)?folk\s+(?:medicine|practices)(?:\s+practices)?$",
+    flags=re.IGNORECASE,
+)
+EXAMPLE_SUFFIX_PATTERN = re.compile(r"\s+such as\s+\w+$", flags=re.IGNORECASE)
+# Redundant suffix/prefix variants of an existing entry (e.g. "asthma symptoms"
+# -> "asthma", "general weakness" -> "weakness") -- stripped and merged.
+SYMPTOMS_SUFFIX_PATTERN = re.compile(r"\s+symptoms$", flags=re.IGNORECASE)
+CERTAIN_PREFIX_PATTERN = re.compile(r"^(?:certain|other)\s+", flags=re.IGNORECASE)
+GENERAL_PREFIX_PATTERN = re.compile(r"^general\s+", flags=re.IGNORECASE)
+
+# Phrases describing what an herb DOES (a purpose/benefit/goal), not a
+# symptom a patient HAS -- e.g. "digestive support", "wound care", "digestive
+# health". In every observed case the real symptom already exists as its own
+# clean entry (e.g. "stress", "wounds"), so these are rejected outright
+# rather than merged.
+NOT_A_SYMPTOM_SUFFIXES = (" support", " relief", " wellness", " nourishment", " health")
+WOUND_PURPOSE_PATTERN = re.compile(r"\bwound (care|healing)\b", flags=re.IGNORECASE)
+BODY_SYSTEM_PATTERN = re.compile(r"^the \w+ system$", flags=re.IGNORECASE)
+EXACT_REJECT = {"weight management", "muscle", "kidney", "wellness"}  # bare organ nouns / goal
+# phrases, not symptoms on their own -- e.g. "kidney stones"/"muscle pain" already cover the
+# real symptom, and "wellness" alone is what's left after stripping "general " from "general
+# wellness" (a goal phrase, not a symptom).
+
+# Spelling/near-duplicate variants of an existing entry, merged to the canonical form.
+SPELLING_MERGE = {"snakebite": "snake bites", "diabetes-related": "diabetes"}
+
+
+def _looks_like_a_purpose_phrase(p):
+    """True for herb-benefit/goal phrases ("X support", "wound care", "the
+    immune system", leftover "traditionally used as a food source..."
+    sentence fragments) rather than an actual patient symptom."""
+    if p in EXACT_REJECT:
+        return True
+    if p.endswith(NOT_A_SYMPTOM_SUFFIXES):
+        return True
+    if WOUND_PURPOSE_PATTERN.search(p) or BODY_SYSTEM_PATTERN.match(p):
+        return True
+    if p.startswith("to ") or p.startswith("traditionally"):
+        return True
+    return False
+
 
 def extract_symptoms(text):
     """Parse a free-text Symptoms cell into a list of clean symptom phrases."""
@@ -75,8 +120,23 @@ def extract_symptoms(text):
             p = VERB_PATTERN.sub("", p).strip()
         if not p or len(p) <= 1:
             continue
+
+        # Strip trailing qualifier/example clauses stuck to a real symptom,
+        # then redundant prefix/suffix variants -- merge into the base term.
+        p = QUALIFIER_SUFFIX_PATTERN.sub("", p).strip()
+        p = EXAMPLE_SUFFIX_PATTERN.sub("", p).strip()
+        p = SYMPTOMS_SUFFIX_PATTERN.sub("", p).strip()
+        p = CERTAIN_PREFIX_PATTERN.sub("", p).strip()
+        p = GENERAL_PREFIX_PATTERN.sub("", p).strip()
+        if not p or len(p) <= 1:
+            continue
+
         if any(marker in p for marker in JUNK_MARKERS):
             continue
+        if _looks_like_a_purpose_phrase(p):
+            continue
+
+        p = SPELLING_MERGE.get(p, p)
         cleaned.append(p)
     return cleaned
 
@@ -144,6 +204,10 @@ def main():
 
     vc = final["Herbal Name"].value_counts()
     print(f"Classes with 1 sample: {(vc == 1).sum()} / {final['Herbal Name'].nunique()} total classes")
+
+    print("\nFull symptom vocabulary (for manual review):")
+    for s in vocab:
+        print(f"  {s}")
 
 
 if __name__ == "__main__":
