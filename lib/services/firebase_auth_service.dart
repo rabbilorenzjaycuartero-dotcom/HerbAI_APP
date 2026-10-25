@@ -104,6 +104,17 @@ class FirebaseAuthService {
     return _currentUser;
   }
 
+  /// Updates the signed-in user's display name and refreshes the cached
+  /// user so the change shows up immediately without a manual sign-out/in.
+  static Future<AuthUser?> updateProfile({String? displayName}) async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    if (displayName != null) {
+      await user.updateDisplayName(displayName);
+    }
+    return refreshCurrentUser();
+  }
+
   static Future<AuthUser> registerWithEmailAndPassword({
     required String name,
     required String email,

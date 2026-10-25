@@ -118,11 +118,26 @@ class RatingService {
 
       transaction.set(plantRef, {'totalScore': newTotal, 'count': newCount});
       transaction.set(userRatingRef, {
+        'uid': uid,
         'rating': rating,
         'comment': comment,
         'userName': userName,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
+  }
+
+  /// How many plants this user has rated, across all of them -- a
+  /// collection-group query over every plant's userRatings subcollection,
+  /// filtered by the uid field (added above) since a user's own doc id
+  /// alone isn't queryable across different parent plant docs. Uses
+  /// Firestore's count() aggregate so it doesn't download every document.
+  static Future<int> getUserReviewCount(String uid) async {
+    final snap = await _firestore
+        .collectionGroup('userRatings')
+        .where('uid', isEqualTo: uid)
+        .count()
+        .get();
+    return snap.count ?? 0;
   }
 }

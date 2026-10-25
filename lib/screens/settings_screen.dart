@@ -69,7 +69,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             _buildMenuTile(
               icon: Icons.info,
-              title: 'About HERBIA',
+              title: 'About HERBAI',
               onTap: () {
                 context.push('/about');
               },

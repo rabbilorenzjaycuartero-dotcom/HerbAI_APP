@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/plant_model.dart';
 import '../providers/plant_provider.dart';
 import '../core/app_theme.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/plant_rating_section.dart';
 import '../widgets/plant_reviews_section.dart';
+import '../widgets/source_webview_screen.dart';
 import '../widgets/zoomable_image_viewer.dart';
 
 class PlantDetailsScreen extends StatefulWidget {
@@ -28,6 +30,24 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
   // after the user leaves and reopens this screen.
   int _reviewsRefreshToken = 0;
 
+  void _handleShare() {
+    final parts = [
+      plant.scientificName.isNotEmpty
+          ? '${plant.name} (${plant.scientificName})'
+          : plant.name,
+      if (plant.description.isNotEmpty) plant.description,
+      if (plant.medicinalUses.isNotEmpty)
+        'Medicinal Uses:\n${plant.medicinalUses.map((u) => '• $u').join('\n')}',
+      if (plant.preparationMethods.isNotEmpty)
+        'Preparation Methods:\n${plant.preparationMethods.map((m) => '• $m').join('\n')}',
+      if (plant.safetyWarnings.isNotEmpty)
+        'Safety Warnings:\n${plant.safetyWarnings.map((w) => '• $w').join('\n')}',
+      if (plant.sourceUrl.isNotEmpty) 'Source: ${plant.sourceUrl}',
+      'Shared via HERBAI',
+    ];
+    Share.share(parts.join('\n\n'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final plantProvider = Provider.of<PlantProvider>(context);
@@ -48,7 +68,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
-            onPressed: () {},
+            onPressed: _handleShare,
           ),
         ],
       ),
@@ -322,17 +342,46 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           color: AppTheme.primary.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              plant.ethnobotanicalInfo,
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                height: 1.5,
-                fontStyle: FontStyle.italic,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  plant.ethnobotanicalInfo,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    height: 1.5,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                if (plant.sourceUrl.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () => SourceWebviewScreen.show(context, plant.sourceUrl),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.open_in_new_rounded, size: 16, color: AppTheme.primary),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'View source',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
       ],
     );
   }
+
 }

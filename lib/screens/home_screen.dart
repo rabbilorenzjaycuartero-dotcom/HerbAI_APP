@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
-                      'Welcome to HERBIA',
+                      'Welcome to HERBAI',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.primary,
@@ -366,7 +366,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Select your symptoms and let HERBIA\'s AI recommend the most suitable medicinal plants.',
+                          'Select your symptoms and let HERBAI\'s AI recommend the most suitable medicinal plants.',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.9),

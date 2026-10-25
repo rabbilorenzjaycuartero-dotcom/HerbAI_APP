@@ -32,7 +32,7 @@ class TermsConditionsScreen extends StatelessWidget {
               const SizedBox(height: 32),
               _buildSection(
                 '1. User Responsibilities',
-                'By using the HERBIA application, you agree to use it responsibly and for educational purposes only. The information provided in this app is based on ethnobotanical knowledge and should not replace professional medical advice.',
+                'By using the HERBAI application, you agree to use it responsibly and for educational purposes only. The information provided in this app is based on ethnobotanical knowledge and should not replace professional medical advice.',
               ),
               const SizedBox(height: 24),
               _buildSection(
@@ -42,7 +42,7 @@ class TermsConditionsScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSection(
                 '3. Medical Disclaimer',
-                'THE INFORMATION PROVIDED BY HERBIA IS FOR GENERAL EDUCATIONAL PURPOSES ONLY. IT IS NOT INTENDED TO BE A SUBSTITUTE FOR PROFESSIONAL MEDICAL ADVICE, DIAGNOSIS, OR TREATMENT. ALWAYS SEEK THE ADVICE OF YOUR PHYSICIAN OR OTHER QUALIFIED HEALTH PROVIDER WITH ANY QUESTIONS YOU MAY HAVE REGARDING A MEDICAL CONDITION.',
+                'THE INFORMATION PROVIDED BY HERBAI IS FOR GENERAL EDUCATIONAL PURPOSES ONLY. IT IS NOT INTENDED TO BE A SUBSTITUTE FOR PROFESSIONAL MEDICAL ADVICE, DIAGNOSIS, OR TREATMENT. ALWAYS SEEK THE ADVICE OF YOUR PHYSICIAN OR OTHER QUALIFIED HEALTH PROVIDER WITH ANY QUESTIONS YOU MAY HAVE REGARDING A MEDICAL CONDITION.',
               ),
               const SizedBox(height: 24),
               _buildSection(

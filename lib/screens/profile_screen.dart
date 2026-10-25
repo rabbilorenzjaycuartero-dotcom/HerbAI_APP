@@ -5,6 +5,8 @@ import '../providers/plant_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../core/app_theme.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/rating_service.dart';
+import '../services/settings_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +16,36 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  int? _reviewCount;
+  int? _searchCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final uid = FirebaseAuthService.currentUser?.uid;
+    final results = await Future.wait([
+      if (uid != null) RatingService.getUserReviewCount(uid) else Future.value(0),
+      SettingsService.getSearchCount(),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _reviewCount = results[0];
+      _searchCount = results[1];
+    });
+  }
+
+  Future<void> _handleEditProfile() async {
+    await context.push('/edit-profile');
+    // Picks up a changed name/photo immediately instead of only after
+    // leaving and reopening this screen.
+    await FirebaseAuthService.refreshCurrentUser();
+    if (mounted) setState(() {});
+  }
+
   Future<void> _handleLogout() async {
     debugPrint('Logout initiated from profile screen');
     // Show confirmation dialog
@@ -114,17 +146,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildStatItem('Favorites', plantProvider.favorites.length),
-        _buildStatItem('Reviews', 12),
-        _buildStatItem('Searches', 48),
+        _buildStatItem('Reviews', _reviewCount),
+        _buildStatItem('Searches', _searchCount),
       ],
     );
   }
 
-  Widget _buildStatItem(String label, int count) {
+  Widget _buildStatItem(String label, int? count) {
     return Column(
       children: [
         Text(
-          count.toString(),
+          count?.toString() ?? '—',
           style: const TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
@@ -147,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildMenuItem(
             icon: Icons.edit,
             title: 'Edit Profile',
-            onTap: () {},
+            onTap: _handleEditProfile,
           ),
           _buildMenuItem(
             icon: Icons.settings,
@@ -158,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           _buildMenuItem(
             icon: Icons.info,
-            title: 'About HERBIA',
+            title: 'About HERBAI',
             onTap: () {
               context.push('/about');
             },

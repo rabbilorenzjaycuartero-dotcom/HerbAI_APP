@@ -192,15 +192,18 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
       action: CustomButton(
         text: 'Choose Different Symptoms',
         onPressed: () {
-          // context.pop() throws GoError("There is nothing to pop") when
-          // this screen is the bottom of the navigation stack instead of
-          // being pushed on top of /symptoms or /describe -- fall back to
-          // going home rather than crashing the tap handler.
-          if (context.canPop()) {
-            context.pop();
-          } else {
-            context.go('/');
-          }
+          // A single context.pop() only lands back on Health Check (the
+          // screen pushed just before this one, for both the /symptoms and
+          // /describe entry points) -- not actually "choosing different
+          // symptoms" as promised. go('/symptoms') takes the user straight
+          // to the symptom picker and clears the now-stale recommendation
+          // off the stack, regardless of which entry point they came from.
+          // This empty state only shows up when the current selection
+          // produced zero results, so clear it too -- otherwise the user
+          // would land back on the picker with that same losing combination
+          // still checked.
+          Provider.of<SymptomProvider>(context, listen: false).clearSymptoms();
+          context.go('/symptoms');
         },
       ),
     );
@@ -254,7 +257,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'HERBIA provides educational information based on ethnobotanical knowledge. This application does not replace professional medical advice. Consult a licensed healthcare professional for proper diagnosis and treatment.',
+            'HERBAI provides educational information based on ethnobotanical knowledge. This application does not replace professional medical advice. Consult a licensed healthcare professional for proper diagnosis and treatment.',
             style: TextStyle(
               fontSize: 14,
               color: Colors.orange.shade800,

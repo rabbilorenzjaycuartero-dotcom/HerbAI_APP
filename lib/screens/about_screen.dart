@@ -9,7 +9,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'About HERBIA'),
+      appBar: const CustomAppBar(title: 'About HERBAI'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -56,7 +56,7 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSection(
                 'App Description',
-                'HERBIA is a modern healthcare application that preserves and promotes ethnobotanical herbal knowledge. The application allows users to explore herbal plants, search medicinal information, save favorite plants, and prepares for future AI-powered herbal recommendations and plant image identification.',
+                'HERBAI is a modern healthcare application that preserves and promotes ethnobotanical herbal knowledge. The application allows users to explore herbal plants, search medicinal information, save favorite plants, and prepares for future AI-powered herbal recommendations and plant image identification.',
               ),
               const SizedBox(height: 24),
               _buildSection(
@@ -77,7 +77,7 @@ class AboutScreen extends StatelessWidget {
               const Divider(),
               const SizedBox(height: 16),
               Text(
-                '© 2026 HERBIA. All rights reserved.',
+                '© 2026 HERBAI. All rights reserved.',
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14,

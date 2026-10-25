@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/plant_model.dart';
 import '../core/mock_data.dart';
 import '../services/api_service.dart';
+import '../services/settings_service.dart';
 
 class PlantProvider with ChangeNotifier {
   List<Plant> _plants = [];
@@ -61,6 +62,10 @@ class PlantProvider with ChangeNotifier {
   }
 
   void addSearch(String search) {
+    // Counts toward the Profile screen's lifetime "Searches" stat every
+    // time, even a repeat -- unlike the recent-list dedup below, which is
+    // only about what's shown, not how many times the user has searched.
+    SettingsService.incrementSearchCount();
     if (!_recentSearches.contains(search)) {
       _recentSearches.insert(0, search);
       if (_recentSearches.length > 10) {

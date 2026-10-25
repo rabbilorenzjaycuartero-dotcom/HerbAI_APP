@@ -46,7 +46,7 @@ class EmptyStateWidget extends StatelessWidget {
             ),
             if (action != null) ...[
               const SizedBox(height: 24),
-              action!,
+              SizedBox(width: double.infinity, child: action!),
             ],
           ],
         ),

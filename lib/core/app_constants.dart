@@ -1,7 +1,7 @@
 import '../models/plant_model.dart';
 
 class AppConstants {
-  static const String appName = 'HERBIA';
+  static const String appName = 'HERBAI';
   static const String tagline = 'Smart Herbal Knowledge at Your Fingertips';
   static const String version = '1.0.0';
 

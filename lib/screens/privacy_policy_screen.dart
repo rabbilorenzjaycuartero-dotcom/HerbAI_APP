@@ -32,7 +32,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               const SizedBox(height: 32),
               _buildSection(
                 '1. Data Collection',
-                'HERBIA is designed to prioritize your privacy. Currently, the application operates entirely locally on your device and does not collect any personal data, user information, or usage statistics. All data, including your favorite plants, settings, and search history, is stored locally on your device using SharedPreferences.',
+                'HERBAI is designed to prioritize your privacy. Currently, the application operates entirely locally on your device and does not collect any personal data, user information, or usage statistics. All data, including your favorite plants, settings, and search history, is stored locally on your device using SharedPreferences.',
               ),
               const SizedBox(height: 24),
               _buildSection(
@@ -47,12 +47,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSection(
                 '4. Future AI Features',
-                'Future versions of HERBIA may include AI-driven features such as plant identification and personalized recommendations. These features will be optional, and we will update this privacy policy accordingly before implementing any changes that involve data collection or processing outside of your device.',
+                'Future versions of HERBAI may include AI-driven features such as plant identification and personalized recommendations. These features will be optional, and we will update this privacy policy accordingly before implementing any changes that involve data collection or processing outside of your device.',
               ),
               const SizedBox(height: 24),
               _buildSection(
                 '5. Contact Information',
-                'If you have any questions or concerns about this privacy policy or the HERBIA application, please contact us at:\n\nEmail: privacy@herbia.app\nAddress: Herbal Research Institute, Cebu, Philippines',
+                'If you have any questions or concerns about this privacy policy or the HERBAI application, please contact us at:\n\nEmail: privacy@herbai.app\nAddress: Herbal Research Institute, Cebu, Philippines',
               ),
             ],
           ),

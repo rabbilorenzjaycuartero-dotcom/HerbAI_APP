@@ -9,6 +9,7 @@ import '../screens/favorites_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/about_screen.dart';
+import '../screens/edit_profile_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_conditions_screen.dart';
 import '../screens/symptom_selection_screen.dart';
@@ -149,6 +150,11 @@ final GoRouter router = GoRouter(
       path: '/settings',
       name: 'settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/edit-profile',
+      name: 'edit-profile',
+      builder: (context, state) => const EditProfileScreen(),
     ),
     GoRoute(
       path: '/about',

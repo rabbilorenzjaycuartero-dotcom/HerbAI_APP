@@ -11,6 +11,7 @@ class Plant {
   final List<String> preparationMethods;
   final List<String> safetyWarnings;
   final String ethnobotanicalInfo;
+  final String sourceUrl;
   final String imageUrl;
   final List<String> categories;
   final List<String> symptomsHelped;
@@ -37,6 +38,7 @@ class Plant {
     required this.preparationMethods,
     required this.safetyWarnings,
     required this.ethnobotanicalInfo,
+    this.sourceUrl = '',
     required this.imageUrl,
     required this.categories,
     required this.symptomsHelped,
@@ -61,6 +63,7 @@ class Plant {
           List<String>.from(json['preparationMethods'] as List? ?? []),
       safetyWarnings: List<String>.from(json['safetyWarnings'] as List? ?? []),
       ethnobotanicalInfo: json['ethnobotanicalInfo'] as String? ?? '',
+      sourceUrl: json['sourceUrl'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
       categories: List<String>.from(json['categories'] as List? ?? []),
       symptomsHelped: List<String>.from(json['symptomsHelped'] as List? ?? []),

@@ -4,6 +4,7 @@ class SettingsService {
   static const String _keyDarkMode = 'dark_mode';
   static const String _keyNotifications = 'notifications_enabled';
   static const String _keyLanguage = 'selected_language';
+  static const String _keySearchCount = 'search_count';
 
   // Default values
   static const bool defaultDarkMode = false;
@@ -41,6 +42,20 @@ class SettingsService {
   static Future<void> setLanguage(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyLanguage, value);
+  }
+
+  // Search count (lifetime total, for the Profile screen's "Searches" stat
+  // -- deliberately separate from PlantProvider.recentSearches, which is an
+  // unpersisted, deduplicated *recent list* rather than a running total)
+  static Future<int> getSearchCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keySearchCount) ?? 0;
+  }
+
+  static Future<void> incrementSearchCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getInt(_keySearchCount) ?? 0;
+    await prefs.setInt(_keySearchCount, current + 1);
   }
 
   // Reset all settings

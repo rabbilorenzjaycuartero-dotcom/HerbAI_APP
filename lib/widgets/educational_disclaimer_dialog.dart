@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import 'custom_button.dart';
 
-/// Must-accept notice shown on every login clarifying HERBIA is an
+/// Must-accept notice shown on every login clarifying HERBAI is an
 /// educational Capstone project, not a substitute for professional medical
 /// advice or a market-ready product.
 class EducationalDisclaimerDialog extends StatelessWidget {
@@ -57,7 +57,7 @@ class EducationalDisclaimerDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'HERBIA is developed strictly for educational and research '
+                  'HERBAI is developed strictly for educational and research '
                   'purposes as a Capstone Project by students of Caraga State '
                   'University – Cabadbaran Campus (CSUCC).\n\n'
                   'The herbal recommendations and information provided are '
