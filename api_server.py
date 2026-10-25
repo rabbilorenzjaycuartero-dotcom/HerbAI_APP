@@ -191,9 +191,9 @@ def _send_verification_code_email(to_email, code):
     sender = os.environ["GMAIL_SENDER_EMAIL"]
     app_password = os.environ["GMAIL_APP_PASSWORD"]
     message = MIMEText(
-        f"Your HERBIA verification code is: {code}\n\nThis code expires in 10 minutes."
+        f"Your HERBAI verification code is: {code}\n\nThis code expires in 10 minutes."
     )
-    message["Subject"] = "Your HERBIA verification code"
+    message["Subject"] = "Your HERBAI verification code"
     message["From"] = sender
     message["To"] = to_email
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
@@ -224,7 +224,7 @@ preprocessed_df = pd.read_csv(PREPROCESSED_CSV)
 # exposed to the app as the herb "id".
 assert len(raw_df) == len(preprocessed_df), "raw/preprocessed CSV row-count mismatch"
 meta_df = preprocessed_df.copy()
-for col in ["Symptoms", "Preparation", "Precautions", "Botany"]:
+for col in ["Symptoms", "Preparation", "Precautions", "Botany", "Source URL"]:
     meta_df[col] = raw_df[col].values
 meta_by_pos = meta_df.to_dict("index")
 print(f"Loaded {len(meta_by_pos)} herbs, {len(symptom_cols)} symptoms.")
@@ -264,6 +264,7 @@ def _herb_to_json(pos, rec, relevance_score=None, conditions=None):
         "preparationMethods": _split_sentences(rec.get("Preparation")),
         "safetyWarnings": _split_sentences(rec.get("Precautions")),
         "ethnobotanicalInfo": rec.get("Botany") if isinstance(rec.get("Botany"), str) else "",
+        "sourceUrl": rec.get("Source URL") if isinstance(rec.get("Source URL"), str) else "",
         "categories": [],
         "rating": 0.0,
         "reviewCount": 0,
