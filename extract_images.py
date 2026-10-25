@@ -24,7 +24,7 @@ NS_A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 NS_RELS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
-
+ 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     z = zipfile.ZipFile(XLSX_PATH)

@@ -1,5 +1,6 @@
 # Secrets - never commit
 .env
+firebase-service-account.json
 
 # Python
 __pycache__/
@@ -14,6 +15,7 @@ HERBAL_DB - Sheet2.csv
 HERBAL_DB - Sheet3.csv
 HERBAL_DB data_image.xlsx
 HERBAL_DB_final.xlsx
+HERBAL_DB_with_URLs.xlsx
 
 # Old experiment snapshots - only the active model is needed to deploy
 models/herb_relevance_model.joblib

@@ -6,5 +6,6 @@ joblib
 flask
 flask-cors
 supabase
+firebase-admin
 python-dotenv
 gunicorn
