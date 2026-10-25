@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/app_constants.dart';
 import '../core/app_theme.dart';
 import '../services/firebase_auth_service.dart';
+import '../widgets/decorative_blobs.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,6 +18,10 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+
+  // Once the auth check finishes, an unauthenticated user sees the welcome
+  // buttons in-place instead of being routed straight to /login.
+  bool _showWelcome = false;
 
   @override
   void initState() {
@@ -35,28 +40,33 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(seconds: 1), () async {
       if (!mounted) return;
 
-      debugPrint('Splash screen: checking auth state');
       final user = FirebaseAuthService.currentUser;
-      debugPrint('Splash screen: current user = ${user?.email ?? 'null'}');
 
       if (user != null) {
-        debugPrint('Splash screen: refreshing user data');
-        final refreshedUser = await FirebaseAuthService.refreshCurrentUser();
+        AuthUser? refreshedUser;
+        try {
+          // refreshCurrentUser() hits Firebase over the network with no
+          // timeout of its own -- without this, a slow/unresponsive network
+          // call here leaves the splash screen spinning forever with no
+          // way out. On timeout, fall back to the cached (pre-refresh)
+          // user instead of blocking, so a flaky connection doesn't strand
+          // an already-known-verified user on the splash screen.
+          refreshedUser = await FirebaseAuthService.refreshCurrentUser()
+              .timeout(const Duration(seconds: 8));
+        } on TimeoutException {
+          debugPrint('Auth refresh timed out; falling back to cached status.');
+          refreshedUser = user;
+        }
         if (!mounted) return;
-        
+
         final isVerified = refreshedUser?.emailVerified ?? false;
-        debugPrint('Splash screen: email verified = $isVerified');
-        
         if (isVerified) {
-          debugPrint('Splash screen: navigating to home');
           context.go('/');
         } else {
-          debugPrint('Splash screen: navigating to verify-email');
           context.go('/verify-email');
         }
       } else {
-        debugPrint('Splash screen: no user, navigating to login');
-        context.go('/login');
+        setState(() => _showWelcome = true);
       }
     });
   }
@@ -71,51 +81,151 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary,
-                    borderRadius: BorderRadius.circular(32),
-                  ),
-                  child: const Icon(Icons.eco, size: 72, color: Colors.white),
-                ),
+      body: Stack(
+        children: [
+          const DecorativeBlobs(),
+          SafeArea(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: _showWelcome ? _buildWelcome() : _buildSplash(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogo({double size = 120, double iconSize = 72}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppTheme.primary,
+        borderRadius: BorderRadius.circular(size * 0.27),
+      ),
+      child: Icon(Icons.eco, size: iconSize, color: Colors.white),
+    );
+  }
+
+  Widget _buildSplash() {
+    return Center(
+      key: const ValueKey('splash'),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(scale: _scaleAnimation, child: _buildLogo()),
+          ),
+          const SizedBox(height: 24),
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: const Text(
+              AppConstants.appName,
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primary,
               ),
             ),
-            const SizedBox(height: 24),
-            FadeTransition(
-              opacity: _fadeAnimation,
+          ),
+          const SizedBox(height: 8),
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                AppConstants.appName,
-                style: const TextStyle(
-                  fontSize: 36,
+                AppConstants.tagline,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcome() {
+    return Padding(
+      key: const ValueKey('welcome'),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildLogo(size: 110, iconSize: 60),
+          const SizedBox(height: 16),
+          const Text(
+            AppConstants.appName,
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            AppConstants.tagline,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 48),
+          Text(
+            'WELCOME',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => context.go('/login'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text(
+                'LOG IN',
+                style: TextStyle(
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primary,
+                  letterSpacing: 1,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  AppConstants.tagline,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => context.go('/register'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.secondary,
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text(
+                'SIGN UP',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

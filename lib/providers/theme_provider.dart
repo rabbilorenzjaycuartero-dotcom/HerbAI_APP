@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../core/app_theme.dart';
 import '../services/settings_service.dart';
 
 class ThemeProvider with ChangeNotifier {
@@ -16,6 +17,7 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> _loadPreferences() async {
     _isDarkMode = await SettingsService.getDarkMode();
+    AppTheme.isDark = _isDarkMode;
     _notificationsEnabled = await SettingsService.getNotificationsEnabled();
     _selectedLanguage = await SettingsService.getLanguage();
     notifyListeners();
@@ -23,6 +25,7 @@ class ThemeProvider with ChangeNotifier {
 
   Future<void> toggleDarkMode(bool value) async {
     _isDarkMode = value;
+    AppTheme.isDark = value;
     await SettingsService.setDarkMode(value);
     notifyListeners();
   }
@@ -42,6 +45,7 @@ class ThemeProvider with ChangeNotifier {
   Future<void> resetSettings() async {
     await SettingsService.resetSettings();
     _isDarkMode = SettingsService.defaultDarkMode;
+    AppTheme.isDark = _isDarkMode;
     _notificationsEnabled = SettingsService.defaultNotifications;
     _selectedLanguage = SettingsService.defaultLanguage;
     notifyListeners();

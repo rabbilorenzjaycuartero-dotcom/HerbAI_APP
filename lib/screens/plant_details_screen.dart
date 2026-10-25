@@ -3,11 +3,12 @@ import 'package:provider/provider.dart';
 import '../models/plant_model.dart';
 import '../providers/plant_provider.dart';
 import '../core/app_theme.dart';
-import '../core/mock_data.dart';
 import '../widgets/custom_appbar.dart';
-import '../widgets/rating_widget.dart';
+import '../widgets/plant_rating_section.dart';
+import '../widgets/plant_reviews_section.dart';
+import '../widgets/zoomable_image_viewer.dart';
 
-class PlantDetailsScreen extends StatelessWidget {
+class PlantDetailsScreen extends StatefulWidget {
   final Plant plant;
 
   const PlantDetailsScreen({
@@ -16,9 +17,20 @@ class PlantDetailsScreen extends StatelessWidget {
   });
 
   @override
+  State<PlantDetailsScreen> createState() => _PlantDetailsScreenState();
+}
+
+class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
+  Plant get plant => widget.plant;
+
+  // Bumped whenever a review is posted, so PlantReviewsSection (keyed on
+  // this) remounts and re-fetches instead of only showing the new review
+  // after the user leaves and reopens this screen.
+  int _reviewsRefreshToken = 0;
+
+  @override
   Widget build(BuildContext context) {
     final plantProvider = Provider.of<PlantProvider>(context);
-    final reviews = MockData.getReviews();
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -44,7 +56,7 @@ class PlantDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildPlantImage(),
+            _buildPlantImage(context),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -52,7 +64,12 @@ class PlantDetailsScreen extends StatelessWidget {
                 children: [
                   _buildPlantHeader(),
                   const SizedBox(height: 8),
-                  RatingWidget(rating: plant.rating, showText: true),
+                  PlantRatingSection(
+                    plantId: plant.id,
+                    onReviewPosted: () {
+                      setState(() => _reviewsRefreshToken++);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   _buildDescription(),
                   const SizedBox(height: 24),
@@ -60,11 +77,18 @@ class PlantDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildSection('Preparation Methods', plant.preparationMethods, Icons.medical_services),
                   const SizedBox(height: 24),
+                  if (plant.conditionWarnings.isNotEmpty) ...[
+                    _buildConditionWarnings(),
+                    const SizedBox(height: 24),
+                  ],
                   _buildSafetyWarnings(),
                   const SizedBox(height: 24),
                   _buildEthnobotanicalInfo(),
                   const SizedBox(height: 24),
-                  _buildReviewsSection(reviews),
+                  PlantReviewsSection(
+                    key: ValueKey(_reviewsRefreshToken),
+                    plantId: plant.id,
+                  ),
                 ],
               ),
             ),
@@ -74,7 +98,7 @@ class PlantDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPlantImage() {
+  Widget _buildPlantImage(BuildContext context) {
     // Image.network throws synchronously (before errorBuilder can catch it)
     // when given an empty URL, which is the neutral default for herbs with
     // no gathered image data -- so an empty url skips straight to fallback.
@@ -90,12 +114,15 @@ class PlantDetailsScreen extends StatelessWidget {
         if (plant.imageUrl.isEmpty)
           fallback
         else
-          Image.network(
-            plant.imageUrl,
-            height: 300,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => fallback,
+          GestureDetector(
+            onTap: () => ZoomableImageViewer.show(context, plant.imageUrl),
+            child: Image.network(
+              plant.imageUrl,
+              height: 300,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => fallback,
+            ),
           ),
       ],
     );
@@ -196,6 +223,51 @@ class PlantDetailsScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildConditionWarnings() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.priority_high_rounded, color: Colors.red),
+            const SizedBox(width: 8),
+            const Text(
+              'Relevant to You',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...plant.conditionWarnings.map((warning) {
+          final color = warning.severity == 'avoid' ? Colors.red.shade700 : Colors.orange.shade800;
+          return Card(
+            color: color.withValues(alpha: 0.08),
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 18, color: color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      warning.note,
+                      style: TextStyle(height: 1.4, color: color),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   Widget _buildSafetyWarnings() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,68 +332,6 @@ class PlantDetailsScreen extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildReviewsSection(List<Review> reviews) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Reviews',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...reviews.map((review) => Card(
-              margin: const EdgeInsets.only(bottom: 12.0),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppTheme.primaryLight,
-                          child: const Icon(Icons.person, color: Colors.white),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                review.userName,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                '${review.date.day}/${review.date.month}/${review.date.year}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        RatingWidget(rating: review.rating, starSize: 14),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      review.comment,
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )),
       ],
     );
   }

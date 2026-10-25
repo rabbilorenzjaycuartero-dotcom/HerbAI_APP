@@ -192,7 +192,15 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
       action: CustomButton(
         text: 'Choose Different Symptoms',
         onPressed: () {
-          context.pop();
+          // context.pop() throws GoError("There is nothing to pop") when
+          // this screen is the bottom of the navigation stack instead of
+          // being pushed on top of /symptoms or /describe -- fall back to
+          // going home rather than crashing the tap handler.
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/');
+          }
         },
       ),
     );

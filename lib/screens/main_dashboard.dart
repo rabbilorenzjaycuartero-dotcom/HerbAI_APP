@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../screens/home_screen.dart';
 import '../screens/recommendation_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/profile_screen.dart';
 import '../core/app_theme.dart';
+import '../widgets/educational_disclaimer_dialog.dart';
 
 class MainDashboard extends StatefulWidget {
   const MainDashboard({super.key});
@@ -22,6 +22,17 @@ class _MainDashboardState extends State<MainDashboard> {
     const FavoritesScreen(),
     const ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Shown on every login rather than persisted/dismissed-once, since
+    // MainDashboard is only freshly created when a login (explicit sign-in,
+    // or the splash screen's auto sign-in resume) actually lands here.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) EducationalDisclaimerDialog.show(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

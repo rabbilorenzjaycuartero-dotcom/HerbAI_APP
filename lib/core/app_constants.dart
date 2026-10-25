@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import '../models/plant_model.dart';
 
 class AppConstants {
@@ -49,10 +48,17 @@ class AppConstants {
   ];
 
   static const List<String> filterOptions = [
-    'DOH Recognized',
     'Commonly Available',
-    'Safe for Children',
-    'Safe for Elderly',
     'Easy to Prepare',
+  ];
+
+  // Shown on the health-check screen before recommendations, so the app can
+  // flag any precaution the data actually has for that condition (see
+  // condition_safety.py in the Herbia_model repo). Not an exhaustive medical
+  // list -- limited to what the dataset's own Precautions text covers.
+  static const List<Symptom> healthConditions = [
+    Symptom(id: 'pregnant', name: 'Pregnant'),
+    Symptom(id: 'breastfeeding', name: 'Breastfeeding'),
+    Symptom(id: 'child', name: 'For a Child / Infant'),
   ];
 }

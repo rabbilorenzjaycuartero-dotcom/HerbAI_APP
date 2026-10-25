@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_theme.dart';
+import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
@@ -13,72 +14,75 @@ class EmailVerificationScreen extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
-  bool _isLoading = false;
-  bool _isResending = false;
+  final _codeController = TextEditingController();
+  bool _isVerifying = false;
+  bool _isSending = false;
 
-  Future<void> _checkEmailVerified() async {
-    setState(() => _isLoading = true);
-    try {
-      debugPrint('Checking email verification status...');
-      final user = await FirebaseAuthService.refreshCurrentUser();
-      if (!mounted) return;
+  @override
+  void initState() {
+    super.initState();
+    // Best-effort, silent: a code may already be sitting in the user's
+    // inbox from registration (still within its 10-minute window) or from
+    // a previous visit to this screen, so a quiet cooldown rejection here
+    // isn't an error worth surfacing -- only an explicit "Resend" tap shows
+    // feedback either way.
+    _sendCode(silent: true);
+  }
 
-      final isVerified = user?.emailVerified ?? false;
-      debugPrint('Email verified: $isVerified for ${user?.email}');
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
 
-      if (isVerified) {
-        debugPrint('Email verified, navigating to home');
-        context.go('/');
-        return;
-      }
+  Future<void> _sendCode({bool silent = false}) async {
+    if (!silent) setState(() => _isSending = true);
+    final token = await FirebaseAuthService.getIdToken();
+    final sent = token != null && await ApiService.sendVerificationCode(token);
+    if (!mounted || silent) return;
+    setState(() => _isSending = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          sent
+              ? 'Verification code sent. Please check your inbox.'
+              : 'Could not send the code. Please try again.',
+        ),
+        backgroundColor: sent ? AppTheme.primary : Colors.red,
+      ),
+    );
+  }
 
-      debugPrint('Email not verified yet');
+  Future<void> _verifyCode() async {
+    final code = _codeController.text.trim();
+    if (code.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Your email has not been verified yet. Please check your inbox.'),
+          content: Text('Enter the 6-digit code from your email.'),
           backgroundColor: Colors.orange,
         ),
       );
-    } catch (e) {
-      debugPrint('Error checking email verification: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      return;
     }
-  }
 
-  Future<void> _resendEmailVerification() async {
-    setState(() => _isResending = true);
+    setState(() => _isVerifying = true);
+    final token = await FirebaseAuthService.getIdToken();
+    final error = token == null
+        ? 'Not signed in.'
+        : await ApiService.verifyEmailCode(token, code);
+    if (!mounted) return;
 
-    try {
-      debugPrint('Resending verification email...');
-      await FirebaseAuthService.sendEmailVerification();
+    if (error == null) {
+      await FirebaseAuthService.refreshCurrentUser();
       if (!mounted) return;
-      debugPrint('Verification email resent successfully');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Verification email sent again. Please check your inbox.'),
-          backgroundColor: AppTheme.primary,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Failed to resend verification email: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (!mounted) return;
-      setState(() => _isResending = false);
+      context.go('/');
+      return;
     }
+
+    setState(() => _isVerifying = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -101,7 +105,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'We sent a verification link to ${FirebaseAuthService.currentUser?.email ?? "your email"}.',
+                'We sent a 6-digit code to ${FirebaseAuthService.currentUser?.email ?? "your email"}.',
                 style: TextStyle(color: AppTheme.textSecondary),
                 textAlign: TextAlign.center,
               ),
@@ -112,15 +116,28 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 color: AppTheme.primary,
               ),
               const SizedBox(height: 32),
+              TextField(
+                controller: _codeController,
+                enabled: !_isVerifying,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+                decoration: const InputDecoration(
+                  counterText: '',
+                  hintText: '------',
+                ),
+              ),
+              const SizedBox(height: 16),
               CustomButton(
-                text: _isResending ? 'Sending...' : 'Resend email',
-                onPressed: _isResending ? null : _resendEmailVerification,
-                isOutlined: true,
+                text: _isVerifying ? 'Verifying...' : 'Verify',
+                onPressed: _isVerifying ? null : _verifyCode,
               ),
               const SizedBox(height: 12),
               CustomButton(
-                text: _isLoading ? 'Checking...' : 'I verified it',
-                onPressed: _isLoading ? null : _checkEmailVerified,
+                text: _isSending ? 'Sending...' : 'Resend code',
+                onPressed: _isSending ? null : () => _sendCode(),
+                isOutlined: true,
               ),
               const SizedBox(height: 12),
               TextButton(

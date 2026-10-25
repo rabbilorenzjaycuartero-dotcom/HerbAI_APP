@@ -5,6 +5,7 @@ import '../providers/symptom_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/loading_widget.dart';
+import '../widgets/decorative_blobs.dart';
 import '../core/app_theme.dart';
 import '../models/plant_model.dart';
 
@@ -30,18 +31,22 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Select Your Symptoms',
-        showBackButton: false,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildSearchBar(),
-            _buildSelectedSymptoms(),
-            Expanded(child: _buildSymptomsList()),
-            _buildBottomButton(),
-          ],
-        ),
+      body: Stack(
+        children: [
+          const DecorativeBlobs(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                _buildSearchBar(),
+                _buildSelectedSymptoms(),
+                Expanded(child: _buildSymptomsList()),
+                _buildBottomButton(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -100,6 +105,18 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
               : null,
           filled: true,
           fillColor: AppTheme.surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide(color: AppTheme.primary, width: 2.0),
+          ),
         ),
       ),
     );
@@ -281,9 +298,10 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
               text: 'Continue',
               onPressed: provider.hasSelectedSymptoms
                   ? () {
-                      context.push('/recommendations');
+                      context.push('/health-check');
                     }
                   : null,
+              borderRadius: 30,
             ),
           ),
         );
@@ -372,7 +390,7 @@ class _SymptomChip extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(24),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -381,7 +399,7 @@ class _SymptomChip extends StatelessWidget {
               color: isSelected
                   ? AppTheme.primary.withValues(alpha: 0.1)
                   : AppTheme.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isSelected
                     ? AppTheme.primary

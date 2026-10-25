@@ -6,6 +6,11 @@ class RatingWidget extends StatelessWidget {
   final double starSize;
   final bool showText;
   final MainAxisAlignment alignment;
+  // When set, each star becomes tappable (1-5) instead of a read-only
+  // display -- used by PlantRatingSection to let the user submit their own
+  // rating, while every other call site (plant cards, review list entries)
+  // leaves this null and stays purely decorative.
+  final ValueChanged<int>? onRatingSelected;
 
   const RatingWidget({
     super.key,
@@ -13,6 +18,7 @@ class RatingWidget extends StatelessWidget {
     this.starSize = 16.0,
     this.showText = false,
     this.alignment = MainAxisAlignment.start,
+    this.onRatingSelected,
   });
 
   @override
@@ -22,7 +28,7 @@ class RatingWidget extends StatelessWidget {
       children: [
         Row(
           children: List.generate(5, (index) {
-            return Icon(
+            final star = Icon(
               index < rating.floor()
                   ? Icons.star
                   : index < rating
@@ -30,6 +36,14 @@ class RatingWidget extends StatelessWidget {
                       : Icons.star_border,
               color: AppTheme.secondary,
               size: starSize,
+            );
+            if (onRatingSelected == null) return star;
+            return GestureDetector(
+              onTap: () => onRatingSelected!(index + 1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                child: star,
+              ),
             );
           }),
         ),

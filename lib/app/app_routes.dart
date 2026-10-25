@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '../screens/splash_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
-import '../screens/home_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/plant_details_screen.dart';
 import '../screens/favorites_screen.dart';
@@ -13,6 +12,8 @@ import '../screens/about_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_conditions_screen.dart';
 import '../screens/symptom_selection_screen.dart';
+import '../screens/describe_symptoms_screen.dart';
+import '../screens/health_check_screen.dart';
 import '../screens/recommendation_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/reset_password_success_screen.dart';
@@ -24,9 +25,19 @@ import '../models/plant_model.dart';
 final ValueNotifier<bool> authStateNotifier = ValueNotifier<bool>(false);
 
 void listenToAuthChanges() {
-  FirebaseAuthService.authStateChanges().listen((_) {
-    authStateNotifier.value = !authStateNotifier.value;
-  });
+  // FirebaseAuthService.authStateChanges() touches FirebaseAuth.instance,
+  // which throws synchronously (not just as a stream error) if Firebase
+  // failed to initialize. This runs before runApp() in main(), so an
+  // unguarded throw here would stop the app from ever rendering instead of
+  // degrading gracefully like the rest of the auth flow does.
+  try {
+    FirebaseAuthService.authStateChanges().listen((_) {
+      authStateNotifier.value = !authStateNotifier.value;
+    });
+  } catch (error, stackTrace) {
+    debugPrint('Failed to listen to auth state changes: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 final GoRouter router = GoRouter(
@@ -95,6 +106,16 @@ final GoRouter router = GoRouter(
       path: '/symptoms',
       name: 'symptoms',
       builder: (context, state) => const SymptomSelectionScreen(),
+    ),
+    GoRoute(
+      path: '/describe',
+      name: 'describe',
+      builder: (context, state) => const DescribeSymptomsScreen(),
+    ),
+    GoRoute(
+      path: '/health-check',
+      name: 'health-check',
+      builder: (context, state) => const HealthCheckScreen(),
     ),
     GoRoute(
       path: '/recommendations',

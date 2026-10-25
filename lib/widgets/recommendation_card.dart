@@ -76,8 +76,10 @@ class RecommendationCard extends StatelessWidget {
                 const SizedBox(width: 12),
               ],
             ),
-            const SizedBox(height: 12),
-            _buildSafetyInfo(),
+            if (plant.conditionWarnings.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildConditionWarnings(),
+            ],
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -188,74 +190,35 @@ class RecommendationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSafetyInfo() {
+  Widget _buildConditionWarnings() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Safety:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+      children: plant.conditionWarnings.map((warning) {
+        final color = warning.severity == 'avoid' ? Colors.red.shade700 : Colors.orange.shade800;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildSafetyChip('Adults', plant.safetyInfo.safeForAdults),
-            _buildSafetyChip('Children', plant.safetyInfo.safeForChildren),
-            _buildSafetyChip('Pregnant', plant.safetyInfo.safeForPregnant, isWarning: true),
-          ],
-        ),
-      ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 16, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  warning.note,
+                  style: TextStyle(fontSize: 12, height: 1.4, color: color),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildSafetyChip(String label, bool? isSafe, {bool isWarning = false}) {
-    Color color;
-    String icon;
-    String text = label;
-    if (isSafe == null) {
-      color = Colors.grey;
-      icon = '?';
-      text = '$label: not verified';
-    } else if (isSafe) {
-      color = Colors.green;
-      icon = '✓';
-    } else {
-      color = Colors.red;
-      icon = isWarning ? '⚠' : '✗';
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            icon,
-            style: TextStyle(color: color, fontSize: 14),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

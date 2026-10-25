@@ -15,6 +15,8 @@ class AuthUser {
   final bool emailVerified;
   final User? _firebaseUser;
 
+  String? get uid => _firebaseUser?.uid;
+
   static AuthUser fromFirebaseUser(User user) {
     return AuthUser(
       email: user.email,
@@ -27,16 +29,30 @@ class AuthUser {
   Future<void> reload() async {
     await _firebaseUser?.reload();
   }
-
-  Future<void> sendEmailVerification() async {
-    await _firebaseUser?.sendEmailVerification();
-  }
 }
 
 class AuthUnavailableException implements Exception {
   const AuthUnavailableException([this.message = 'Authentication is currently unavailable until Firebase is reconnected.']);
 
   final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// Carries a user-facing message translated from a lower-level auth error.
+/// Unlike a plain `Exception(message)`, [toString] returns the message
+/// as-is instead of prefixing it with "Exception: ", since it is shown
+/// directly in UI (SnackBars) via `e.toString()` or [getErrorMessage].
+class AuthFailureException implements Exception {
+  const AuthFailureException(this.message, {this.code});
+
+  final String message;
+  // The original FirebaseAuthException.code, preserved so callers (e.g.
+  // the Login screen telling "wrong email" apart from "wrong password")
+  // can still branch on it even though the exception itself has already
+  // been converted to a friendly message by the time it's thrown here.
+  final String? code;
 
   @override
   String toString() => message;
@@ -115,10 +131,6 @@ class FirebaseAuthService {
       await user.updateDisplayName(name);
       debugPrint('Display name updated successfully');
 
-      debugPrint('Sending email verification...');
-      await user.sendEmailVerification();
-      debugPrint('Email verification sent successfully');
-
       await refreshCurrentUser();
       debugPrint('========== REGISTER SUCCESS ==========');
       debugPrint('Register successful for $email');
@@ -129,7 +141,7 @@ class FirebaseAuthService {
       debugPrint('Exception message: ${error.message}');
       debugPrint('Stack trace:');
       debugPrintStack(stackTrace: StackTrace.current);
-      throw Exception(getErrorMessage(error));
+      throw AuthFailureException(getErrorMessage(error), code: error.code);
     } catch (error, stackTrace) {
       debugPrint('========== REGISTER ERROR ==========');
       debugPrint('Unexpected error: $error');
@@ -171,7 +183,7 @@ class FirebaseAuthService {
       debugPrint('Exception message: ${error.message}');
       debugPrint('Stack trace:');
       debugPrintStack(stackTrace: StackTrace.current);
-      throw Exception(getErrorMessage(error));
+      throw AuthFailureException(getErrorMessage(error), code: error.code);
     } catch (error, stackTrace) {
       debugPrint('========== LOGIN ERROR ==========');
       debugPrint('Unexpected error: $error');
@@ -181,36 +193,11 @@ class FirebaseAuthService {
     }
   }
 
-  static Future<void> sendEmailVerification([AuthUser? user]) async {
-    debugPrint('========== SEND EMAIL VERIFICATION START ==========');
-    debugPrint('Email verification requested.');
-    try {
-      final targetUser = user?._firebaseUser ?? _auth.currentUser;
-      debugPrint('Target user: ${targetUser?.email ?? 'null'}');
-      
-      if (targetUser == null) {
-        debugPrint('ERROR: No signed-in user available');
-        throw const AuthUnavailableException('No signed-in user available.');
-      }
-      
-      debugPrint('Calling sendEmailVerification()...');
-      await targetUser.sendEmailVerification();
-      debugPrint('Verification email sent successfully to ${targetUser.email}');
-      debugPrint('========== SEND EMAIL VERIFICATION SUCCESS ==========');
-    } on FirebaseAuthException catch (error) {
-      debugPrint('========== SEND EMAIL VERIFICATION FAILED ==========');
-      debugPrint('Exception code: ${error.code}');
-      debugPrint('Exception message: ${error.message}');
-      debugPrintStack(stackTrace: StackTrace.current);
-      throw Exception(getErrorMessage(error));
-    } catch (error, stackTrace) {
-      debugPrint('========== SEND EMAIL VERIFICATION ERROR ==========');
-      debugPrint('Unexpected error: $error');
-      debugPrint('Error type: ${error.runtimeType}');
-      debugPrintStack(stackTrace: stackTrace);
-      rethrow;
-    }
-  }
+  /// The signed-in user's Firebase ID token, sent as a Bearer token so the
+  /// Flask backend's /send-verification-code and /verify-email-code routes
+  /// can verify which account is actually calling rather than trusting a
+  /// client-supplied uid/email.
+  static Future<String?> getIdToken() => _auth.currentUser?.getIdToken() ?? Future.value(null);
 
   static Future<void> sendPasswordResetEmail(String email) async {
     debugPrint('========== PASSWORD RESET START ==========');
@@ -225,7 +212,7 @@ class FirebaseAuthService {
       debugPrint('Exception code: ${error.code}');
       debugPrint('Exception message: ${error.message}');
       debugPrintStack(stackTrace: StackTrace.current);
-      throw Exception(getErrorMessage(error));
+      throw AuthFailureException(getErrorMessage(error), code: error.code);
     } catch (error, stackTrace) {
       debugPrint('========== PASSWORD RESET ERROR ==========');
       debugPrint('Unexpected error: $error');
@@ -249,8 +236,21 @@ class FirebaseAuthService {
     if (error is AuthUnavailableException) {
       return error.message;
     }
+    if (error is AuthFailureException) {
+      return error.message;
+    }
     if (error is FirebaseAuthException) {
-      switch (error.code) {
+      // Normalized because the exact code string varies by platform --
+      // Android's native SDK returns e.g. "ERROR_INVALID_CREDENTIAL" where
+      // iOS/other platforms return the lowercase-hyphenated
+      // "invalid-credential" these cases were written against. Without
+      // this, every case below silently falls through to the raw/ugly
+      // default message on Android.
+      var code = error.code.toLowerCase().replaceAll('_', '-');
+      if (code.startsWith('error-')) {
+        code = code.substring('error-'.length);
+      }
+      switch (code) {
         case 'email-already-in-use':
           return 'This email is already in use.';
         case 'invalid-email':
@@ -265,6 +265,8 @@ class FirebaseAuthService {
           return 'No account found for that email.';
         case 'wrong-password':
           return 'Incorrect password.';
+        case 'invalid-credential':
+          return 'Incorrect email or password.';
         case 'too-many-requests':
           return 'Too many attempts. Please try again later.';
         case 'requires-recent-login':
@@ -277,5 +279,18 @@ class FirebaseAuthService {
       return error.toString();
     }
     return 'Something went wrong. Please try again.';
+  }
+
+  /// The raw Firebase error code (e.g. 'invalid-credential', 'wrong-password'),
+  /// or null for anything else. Lets callers branch on specific codes
+  /// without importing package:firebase_auth directly. Checks
+  /// AuthFailureException too, since signInWithEmailAndPassword/etc. always
+  /// convert the real FirebaseAuthException into one of those before it
+  /// reaches calling screens -- the original code only survives via the
+  /// field added there for exactly this purpose.
+  static String? errorCode(Object error) {
+    if (error is FirebaseAuthException) return error.code;
+    if (error is AuthFailureException) return error.code;
+    return null;
   }
 }

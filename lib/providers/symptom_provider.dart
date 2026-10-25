@@ -15,10 +15,15 @@ class SymptomProvider with ChangeNotifier {
   Set<String> _selectedSymptomIds = {};
   SortOption _sortOption = SortOption.bestMatch;
   Set<String> _activeFilters = {};
+  final Set<String> _selectedConditions = {};
 
   List<Plant> _recommendedPlants = [];
   bool _isLoadingRecommendations = false;
   String? _recommendationsError;
+
+  bool _isExtractingSymptoms = false;
+  SymptomExtraction? _lastExtraction;
+  String? _extractionError;
 
   SymptomProvider() {
     _loadSymptoms();
@@ -48,11 +53,16 @@ class SymptomProvider with ChangeNotifier {
 
   SortOption get sortOption => _sortOption;
   Set<String> get activeFilters => _activeFilters;
+  Set<String> get selectedConditions => _selectedConditions;
 
   bool get hasSelectedSymptoms => _selectedSymptomIds.isNotEmpty;
 
   bool get isLoadingRecommendations => _isLoadingRecommendations;
   String? get recommendationsError => _recommendationsError;
+
+  bool get isExtractingSymptoms => _isExtractingSymptoms;
+  SymptomExtraction? get lastExtraction => _lastExtraction;
+  String? get extractionError => _extractionError;
 
   bool isSymptomSelected(Symptom symptom) {
     return _selectedSymptomIds.contains(symptom.id);
@@ -69,6 +79,34 @@ class SymptomProvider with ChangeNotifier {
 
   void clearSymptoms() {
     _selectedSymptomIds.clear();
+    notifyListeners();
+  }
+
+  /// Sends free text to the ML backend, selects every symptom it finds, and
+  /// keeps the spelling suggestions so the screen can ask the user to fix them.
+  Future<void> addSymptomsFromText(String text) async {
+    _isExtractingSymptoms = true;
+    _extractionError = null;
+    notifyListeners();
+
+    try {
+      final extraction = await ApiService.extractSymptoms(text);
+      _selectedSymptomIds.addAll(extraction.symptomIds);
+      _lastExtraction = extraction;
+    } catch (e) {
+      debugPrint('Failed to extract symptoms: $e');
+      _lastExtraction = null;
+      _extractionError = 'Could not reach the server. Please try again.';
+    }
+
+    _isExtractingSymptoms = false;
+    notifyListeners();
+  }
+
+  void clearExtractionResult() {
+    if (_lastExtraction == null && _extractionError == null) return;
+    _lastExtraction = null;
+    _extractionError = null;
     notifyListeners();
   }
 
@@ -91,6 +129,20 @@ class SymptomProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleCondition(String conditionId) {
+    if (_selectedConditions.contains(conditionId)) {
+      _selectedConditions.remove(conditionId);
+    } else {
+      _selectedConditions.add(conditionId);
+    }
+    notifyListeners();
+  }
+
+  void clearConditions() {
+    _selectedConditions.clear();
+    notifyListeners();
+  }
+
   /// Calls the ML backend for the currently selected symptoms and caches
   /// the ranked results. Call this once when entering the recommendations
   /// screen; sorting/filtering afterwards (getRecommendedPlants) is local
@@ -107,8 +159,10 @@ class SymptomProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _recommendedPlants =
-          await ApiService.fetchRecommendations(_selectedSymptomIds.toList());
+      _recommendedPlants = await ApiService.fetchRecommendations(
+        _selectedSymptomIds.toList(),
+        conditions: _selectedConditions.toList(),
+      );
     } catch (e) {
       debugPrint('Failed to fetch recommendations: $e');
       _recommendedPlants = [];
@@ -126,17 +180,8 @@ class SymptomProvider with ChangeNotifier {
       plants = plants.where((plant) {
         for (var filter in _activeFilters) {
           switch (filter) {
-            case 'DOH Recognized':
-              if (!plant.isDohRecognized) return false;
-              break;
             case 'Commonly Available':
               if (plant.availability != AvailabilityStatus.common) return false;
-              break;
-            case 'Safe for Children':
-              if (plant.safetyInfo.safeForChildren != true) return false;
-              break;
-            case 'Safe for Elderly':
-              if (plant.safetyInfo.safeForElderly != true) return false;
               break;
             case 'Easy to Prepare':
               if (!plant.isEasyToPrepare) return false;

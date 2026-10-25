@@ -21,6 +21,10 @@ class Plant {
   // Only present on results from the /recommend endpoint (how well this
   // herb matches the selected symptoms); null for herbs fetched via /plants.
   final double? relevanceScore;
+  // One entry per health condition the user flagged on the health-check
+  // screen that this herb's own Precautions text actually mentions; empty
+  // when no conditions were sent (e.g. herbs fetched via /plants).
+  final List<ConditionWarning> conditionWarnings;
 
   Plant({
     required this.id,
@@ -41,6 +45,7 @@ class Plant {
     this.isDohRecognized = true,
     this.isEasyToPrepare = true,
     this.relevanceScore,
+    this.conditionWarnings = const [],
   });
 
   factory Plant.fromJson(Map<String, dynamic> json) {
@@ -69,8 +74,22 @@ class Plant {
       isDohRecognized: json['isDohRecognized'] as bool? ?? false,
       isEasyToPrepare: json['isEasyToPrepare'] as bool? ?? true,
       relevanceScore: (json['relevanceScore'] as num?)?.toDouble(),
+      conditionWarnings: (json['conditionWarnings'] as List<dynamic>? ?? [])
+          .map((w) => ConditionWarning.fromJson(w as Map<String, dynamic>))
+          .toList(),
     );
   }
+
+  // Plants are re-fetched from the API (e.g. a fresh call to /recommend)
+  // as new object instances representing the same herb, so equality must
+  // be based on id rather than the default identity comparison -- otherwise
+  // favorites tracking (PlantProvider.isFavorite/toggleFavorite) breaks
+  // across separate fetches of the same plant.
+  @override
+  bool operator ==(Object other) => other is Plant && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 enum AvailabilityStatus {
@@ -107,22 +126,29 @@ class SafetyInfo {
   }
 }
 
-class Review {
-  final String id;
-  final String userName;
-  final String userAvatar;
-  final double rating;
-  final String comment;
-  final DateTime date;
+/// A caution quoted verbatim from this herb's own Precautions text because
+/// it mentions a health condition the user flagged -- never a generated
+/// safety claim. severity "avoid" means the sentence itself uses
+/// avoid/contraindication language; "caution" is a softer "consult a
+/// doctor" style deferral.
+class ConditionWarning {
+  final String condition;
+  final String severity;
+  final String note;
 
-  Review({
-    required this.id,
-    required this.userName,
-    required this.userAvatar,
-    required this.rating,
-    required this.comment,
-    required this.date,
+  const ConditionWarning({
+    required this.condition,
+    required this.severity,
+    required this.note,
   });
+
+  factory ConditionWarning.fromJson(Map<String, dynamic> json) {
+    return ConditionWarning(
+      condition: json['condition'] as String,
+      severity: json['severity'] as String,
+      note: json['note'] as String,
+    );
+  }
 }
 
 class Symptom {
