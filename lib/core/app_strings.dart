@@ -394,9 +394,6 @@ class AppStrings {
     'sort_best_match': {'English': 'Best Match', 'Filipino': 'Pinakaangkop'},
     'sort_highest_rated': {'English': 'Highest Rated', 'Filipino': 'Pinakamataas ang Rating'},
     'sort_alphabetical': {'English': 'Alphabetical', 'Filipino': 'Alpabetikal'},
-    'filters_colon': {'English': 'Filters:', 'Filipino': 'Mga Filter:'},
-    'filter_commonly_available': {'English': 'Commonly Available', 'Filipino': 'Karaniwang Available'},
-    'filter_easy_to_prepare': {'English': 'Easy to Prepare', 'Filipino': 'Madaling Ihanda'},
     'no_plants_for_symptoms': {
       'English': 'No herbal plants were found for the selected symptoms.',
       'Filipino': 'Walang nahanap na halamang gamot para sa mga napiling sintomas.',
@@ -535,7 +532,6 @@ class AppStrings {
     // Recommendation card
     'view_details': {'English': 'View Details', 'Filipino': 'Tingnan ang Detalye'},
     'may_help_with': {'English': 'May Help With:', 'Filipino': 'Maaaring Makatulong sa:'},
-    'availability': {'English': 'Availability', 'Filipino': 'Availability'},
 
     // Source webview screen
     'source': {'English': 'Source', 'Filipino': 'Pinagmulan'},

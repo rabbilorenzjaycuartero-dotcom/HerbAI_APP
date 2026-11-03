@@ -14,7 +14,6 @@ class SymptomProvider with ChangeNotifier {
 
   Set<String> _selectedSymptomIds = {};
   SortOption _sortOption = SortOption.bestMatch;
-  Set<String> _activeFilters = {};
   final Set<String> _selectedConditions = {};
 
   List<Plant> _recommendedPlants = [];
@@ -52,7 +51,6 @@ class SymptomProvider with ChangeNotifier {
   }
 
   SortOption get sortOption => _sortOption;
-  Set<String> get activeFilters => _activeFilters;
   Set<String> get selectedConditions => _selectedConditions;
 
   bool get hasSelectedSymptoms => _selectedSymptomIds.isNotEmpty;
@@ -115,20 +113,6 @@ class SymptomProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleFilter(String filter) {
-    if (_activeFilters.contains(filter)) {
-      _activeFilters.remove(filter);
-    } else {
-      _activeFilters.add(filter);
-    }
-    notifyListeners();
-  }
-
-  void clearFilters() {
-    _activeFilters.clear();
-    notifyListeners();
-  }
-
   void toggleCondition(String conditionId) {
     if (_selectedConditions.contains(conditionId)) {
       _selectedConditions.remove(conditionId);
@@ -175,22 +159,6 @@ class SymptomProvider with ChangeNotifier {
 
   List<Plant> getRecommendedPlants() {
     List<Plant> plants = List.from(_recommendedPlants);
-
-    if (_activeFilters.isNotEmpty) {
-      plants = plants.where((plant) {
-        for (var filter in _activeFilters) {
-          switch (filter) {
-            case 'Commonly Available':
-              if (plant.availability != AvailabilityStatus.common) return false;
-              break;
-            case 'Easy to Prepare':
-              if (!plant.isEasyToPrepare) return false;
-              break;
-          }
-        }
-        return true;
-      }).toList();
-    }
 
     switch (_sortOption) {
       case SortOption.bestMatch:

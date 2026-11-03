@@ -69,14 +69,6 @@ class RecommendationCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildSection(context.tr('may_help_with'), plant.symptomsHelped),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildBadge(context.tr('availability'), plant.availability.label,
-                    plant.availability.color),
-                const SizedBox(width: 12),
-              ],
-            ),
             if (plant.conditionWarnings.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildConditionWarnings(),
@@ -153,41 +145,6 @@ class RecommendationCard extends StatelessWidget {
               .toList(),
         ),
       ],
-    );
-  }
-
-  Widget _buildBadge(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

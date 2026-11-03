@@ -47,11 +47,6 @@ class AppConstants {
     Symptom(id: 'urinary-problems', name: 'Urinary Problems'),
   ];
 
-  static const List<String> filterOptions = [
-    'Commonly Available',
-    'Easy to Prepare',
-  ];
-
   // Shown on the health-check screen before recommendations, so the app can
   // flag any precaution the data actually has for that condition (see
   // condition_safety.py in the Herbia_model repo). Not an exhaustive medical

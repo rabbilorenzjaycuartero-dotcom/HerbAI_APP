@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class Plant {
   final String id;
   final String name;
@@ -15,10 +13,8 @@ class Plant {
   final String imageUrl;
   final List<String> categories;
   final List<String> symptomsHelped;
-  final AvailabilityStatus availability;
   final SafetyInfo safetyInfo;
   final bool isDohRecognized;
-  final bool isEasyToPrepare;
   // Only present on results from the /recommend endpoint (how well this
   // herb matches the selected symptoms); null for herbs fetched via /plants.
   final double? relevanceScore;
@@ -42,10 +38,8 @@ class Plant {
     required this.imageUrl,
     required this.categories,
     required this.symptomsHelped,
-    required this.availability,
     required this.safetyInfo,
     this.isDohRecognized = true,
-    this.isEasyToPrepare = true,
     this.relevanceScore,
     this.conditionWarnings = const [],
   });
@@ -67,15 +61,10 @@ class Plant {
       imageUrl: json['imageUrl'] as String? ?? '',
       categories: List<String>.from(json['categories'] as List? ?? []),
       symptomsHelped: List<String>.from(json['symptomsHelped'] as List? ?? []),
-      availability: AvailabilityStatus.values.firstWhere(
-        (e) => e.name == json['availability'],
-        orElse: () => AvailabilityStatus.common,
-      ),
       safetyInfo: SafetyInfo.fromJson(
         json['safetyInfo'] as Map<String, dynamic>? ?? const {},
       ),
       isDohRecognized: json['isDohRecognized'] as bool? ?? false,
-      isEasyToPrepare: json['isEasyToPrepare'] as bool? ?? true,
       relevanceScore: (json['relevanceScore'] as num?)?.toDouble(),
       conditionWarnings: (json['conditionWarnings'] as List<dynamic>? ?? [])
           .map((w) => ConditionWarning.fromJson(w as Map<String, dynamic>))
@@ -93,16 +82,6 @@ class Plant {
 
   @override
   int get hashCode => id.hashCode;
-}
-
-enum AvailabilityStatus {
-  common("Common", Colors.green),
-  uncommon("Uncommon", Colors.orange),
-  rare("Rare", Colors.red);
-
-  const AvailabilityStatus(this.label, this.color);
-  final String label;
-  final Color color;
 }
 
 class SafetyInfo {

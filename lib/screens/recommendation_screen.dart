@@ -9,7 +9,6 @@ import '../widgets/loading_widget.dart';
 import '../widgets/recommendation_card.dart';
 import '../models/plant_model.dart';
 import '../core/app_theme.dart';
-import '../core/app_constants.dart';
 import '../core/context_extensions.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
@@ -96,8 +95,6 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                           const SizedBox(height: 24),
                         ],
                         _buildSortOptions(context, provider),
-                        const SizedBox(height: 16),
-                        _buildFilters(context, provider),
                         const SizedBox(height: 24),
                         if (provider.recommendationsError != null)
                           _buildErrorState(context, provider)
@@ -157,44 +154,6 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               );
             }).toList(),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilters(BuildContext context, SymptomProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.tr('filters_colon'),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: AppConstants.filterOptions.map((filter) {
-            final isSelected = provider.activeFilters.contains(filter);
-            return FilterChip(
-              label: Text(_getFilterLabel(context, filter)),
-              selected: isSelected,
-              onSelected: (_) {
-                provider.toggleFilter(filter);
-              },
-              selectedColor: AppTheme.primary.withValues(alpha: 0.2),
-              checkmarkColor: AppTheme.primary,
-              labelStyle: TextStyle(
-                color: isSelected ? AppTheme.primary : null,
-              ),
-              side: BorderSide(
-                color: isSelected ? AppTheme.primary : Colors.grey.shade300,
-              ),
-            );
-          }).toList(),
         ),
       ],
     );
@@ -298,14 +257,4 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     }
   }
 
-  String _getFilterLabel(BuildContext context, String filter) {
-    switch (filter) {
-      case 'Commonly Available':
-        return context.tr('filter_commonly_available');
-      case 'Easy to Prepare':
-        return context.tr('filter_easy_to_prepare');
-      default:
-        return filter;
-    }
-  }
 }
