@@ -24,8 +24,8 @@ class HomeScreen extends StatelessWidget {
     }
 
     final featuredPlants = plantProvider.plants.take(5).toList();
-    final recentPlants = plantProvider.plants.take(3).toList();
-    final hasRecommendations = symptomProvider.selectedSymptoms.isNotEmpty;
+    final recommendedPlants = symptomProvider.getRecommendedPlants().take(3).toList();
+    final hasRecommendations = recommendedPlants.isNotEmpty;
 
     return Scaffold(
       body: Stack(
@@ -168,14 +168,14 @@ class HomeScreen extends StatelessWidget {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: recentPlants.length,
+                      itemCount: recommendedPlants.length,
                       itemBuilder: (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: PlantCard(
-                            plant: recentPlants[index],
+                            plant: recommendedPlants[index],
                             onTap: () {
-                              context.push('/plant-details', extra: recentPlants[index]);
+                              context.push('/plant-details', extra: recommendedPlants[index]);
                             },
                           ),
                         );
