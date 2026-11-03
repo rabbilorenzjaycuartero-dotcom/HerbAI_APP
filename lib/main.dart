@@ -9,6 +9,7 @@ import 'providers/plant_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/symptom_provider.dart';
 import 'services/firebase_auth_service.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,13 @@ Future<void> main() async {
     debugPrint('Current user: ${FirebaseAuthService.currentUser?.email ?? 'null'}');
   } catch (error, stackTrace) {
     debugPrint('Firebase initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+
+  try {
+    await NotificationService.initialize();
+  } catch (error, stackTrace) {
+    debugPrint('NotificationService initialization failed: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
 

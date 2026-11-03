@@ -5,6 +5,7 @@ class SettingsService {
   static const String _keyNotifications = 'notifications_enabled';
   static const String _keyLanguage = 'selected_language';
   static const String _keySearchCount = 'search_count';
+  static const String _keyLastHealthCheckAt = 'last_health_check_at';
 
   // Default values
   static const bool defaultDarkMode = false;
@@ -56,6 +57,19 @@ class SettingsService {
     final prefs = await SharedPreferences.getInstance();
     final current = prefs.getInt(_keySearchCount) ?? 0;
     await prefs.setInt(_keySearchCount, current + 1);
+  }
+
+  // Last completed health check (drives NotificationService's health-check
+  // reminder) -- null means the user has never completed one yet.
+  static Future<DateTime?> getLastHealthCheckAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    final millis = prefs.getInt(_keyLastHealthCheckAt);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  static Future<void> setLastHealthCheckAt(DateTime value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyLastHealthCheckAt, value.millisecondsSinceEpoch);
   }
 
   // Reset all settings

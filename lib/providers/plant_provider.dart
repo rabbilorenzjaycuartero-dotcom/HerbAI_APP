@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import '../models/plant_model.dart';
 import '../core/mock_data.dart';
 import '../services/api_service.dart';
+import '../services/favorites_service.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/notification_service.dart';
 import '../services/settings_service.dart';
 
 class PlantProvider with ChangeNotifier {
@@ -17,6 +20,13 @@ class PlantProvider with ChangeNotifier {
 
   PlantProvider() {
     _loadData();
+    // Favorites live in Firestore per-user, so they need (re)loading
+    // whenever who's signed in changes -- not just once at startup.
+    try {
+      FirebaseAuthService.authStateChanges().listen((_) => _loadFavorites());
+    } catch (e) {
+      debugPrint('Failed to listen to auth changes in PlantProvider: $e');
+    }
   }
 
   Future<void> _loadData() async {
@@ -35,6 +45,23 @@ class PlantProvider with ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+    await _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final uid = FirebaseAuthService.currentUser?.uid;
+    if (uid == null) {
+      _favorites = [];
+      notifyListeners();
+      return;
+    }
+    try {
+      final ids = await FavoritesService.getFavoritePlantIds(uid);
+      _favorites = _plants.where((plant) => ids.contains(plant.id)).toList();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load favorites: $e');
+    }
   }
 
   List<Plant> searchPlants(String query) {
@@ -48,13 +75,33 @@ class PlantProvider with ChangeNotifier {
         .toList();
   }
 
-  void toggleFavorite(Plant plant) {
-    if (_favorites.contains(plant)) {
-      _favorites.remove(plant);
-    } else {
+  Future<void> toggleFavorite(Plant plant) async {
+    final isNowFavorite = !_favorites.contains(plant);
+    if (isNowFavorite) {
       _favorites.add(plant);
+    } else {
+      _favorites.remove(plant);
     }
     notifyListeners();
+
+    final notificationsEnabled = await SettingsService.getNotificationsEnabled();
+    if (isNowFavorite && notificationsEnabled) {
+      NotificationService.scheduleFavoriteRevisitReminder(plant);
+    } else {
+      NotificationService.cancelFavoriteRevisitReminder(plant);
+    }
+
+    final uid = FirebaseAuthService.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      if (isNowFavorite) {
+        await FavoritesService.addFavorite(uid, plant.id);
+      } else {
+        await FavoritesService.removeFavorite(uid, plant.id);
+      }
+    } catch (e) {
+      debugPrint('Failed to sync favorite to Firestore: $e');
+    }
   }
 
   bool isFavorite(Plant plant) {

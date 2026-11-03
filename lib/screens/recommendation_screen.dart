@@ -11,6 +11,8 @@ import '../models/plant_model.dart';
 import '../core/app_theme.dart';
 import '../core/app_constants.dart';
 import '../core/context_extensions.dart';
+import '../services/notification_service.dart';
+import '../services/settings_service.dart';
 
 class RecommendationScreen extends StatefulWidget {
   const RecommendationScreen({super.key});
@@ -26,6 +28,19 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SymptomProvider>(context, listen: false).fetchRecommendations();
     });
+    _recordHealthCheckCompleted();
+  }
+
+  // Reaching this screen means the user just finished a health check ->
+  // symptom selection -> describe symptoms flow, so this is the natural
+  // single signal to persist for the reminder -- no need to instrument
+  // every screen in that flow individually.
+  Future<void> _recordHealthCheckCompleted() async {
+    final now = DateTime.now();
+    await SettingsService.setLastHealthCheckAt(now);
+    if (await SettingsService.getNotificationsEnabled()) {
+      await NotificationService.scheduleHealthCheckReminder(now);
+    }
   }
 
   @override

@@ -17,5 +17,21 @@ service cloud.firestore {
         allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
+
+    // A user's own favorited plants (users/{uid}/favorites/{plantId}) --
+    // only that user may ever read or write their own favorites list.
+    match /users/{userId}/favorites/{plantId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Collection-group queries (RatingService.getUserReviewCount's
+    // collectionGroup('userRatings').where('uid', ...).count() across every
+    // plant) are authorized separately from the nested match above -- a
+    // rule scoped under a specific parent (plant_ratings/{plantId}/...)
+    // does not by itself authorize a cross-collection group query. Same
+    // permission as the nested rule, just declared for the group query.
+    match /{path=**}/userRatings/{userId} {
+      allow read: if request.auth != null;
+    }
   }
 }
