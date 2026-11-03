@@ -308,8 +308,36 @@ def _image_url(pos):
     return ""
 
 
-def _herb_to_json(pos, rec, relevance_score=None, conditions=None):
+def _fetch_rating_aggregates():
+    """Real per-herb rating average + count from Firestore's plant_ratings
+    collection -- the same data RatingService/PlantRatingSection show in the
+    app, written whenever a user actually rates a herb. One query for the
+    whole collection (not one per herb), since /plants alone serves up to
+    ~1,580 herbs per request. Falls back to {} (every herb then shows
+    0.0/0, same as before this existed) if Firestore isn't available --
+    same fail-soft approach as Supabase photos / Firebase Admin SDK above.
+    """
+    if not _firebase_admin_ready or firestore_db is None:
+        return {}
+    try:
+        aggregates = {}
+        for doc in firestore_db.collection("plant_ratings").stream():
+            data = doc.to_dict() or {}
+            count = data.get("count") or 0
+            total = data.get("totalScore") or 0
+            aggregates[doc.id] = {
+                "rating": (total / count) if count else 0.0,
+                "reviewCount": count,
+            }
+        return aggregates
+    except Exception as error:
+        print(f"WARNING: failed to fetch rating aggregates ({error!r}); ratings will show as 0.")
+        return {}
+
+
+def _herb_to_json(pos, rec, relevance_score=None, conditions=None, rating_aggregates=None):
     symptoms_helped = [c for c in symptom_cols if rec.get(c) == 1]
+    agg = (rating_aggregates or {}).get(str(pos), {})
     result = {
         "id": str(pos),
         "name": rec["Herbal Name"],
@@ -322,12 +350,10 @@ def _herb_to_json(pos, rec, relevance_score=None, conditions=None):
         "ethnobotanicalInfo": rec.get("Botany") if isinstance(rec.get("Botany"), str) else "",
         "sourceUrl": rec.get("Source URL") if isinstance(rec.get("Source URL"), str) else "",
         "categories": [],
-        "rating": 0.0,
-        "reviewCount": 0,
+        "rating": agg.get("rating", 0.0),
+        "reviewCount": agg.get("reviewCount", 0),
         "imageUrl": _image_url(pos),
-        "availability": "common",
         "isDohRecognized": False,
-        "isEasyToPrepare": True,
         "safetyInfo": {
             "safeForAdults": None,
             "safeForChildren": None,
@@ -501,7 +527,11 @@ def get_symptoms():
 
 @app.route("/plants", methods=["GET"])
 def get_plants():
-    return jsonify([_herb_to_json(pos, rec) for pos, rec in meta_by_pos.items()])
+    rating_aggregates = _fetch_rating_aggregates()
+    return jsonify([
+        _herb_to_json(pos, rec, rating_aggregates=rating_aggregates)
+        for pos, rec in meta_by_pos.items()
+    ])
 
 
 @app.route("/extract_symptoms", methods=["POST"])
@@ -536,6 +566,7 @@ def post_recommend():
     if result_df.empty:
         return jsonify([])
 
+    rating_aggregates = _fetch_rating_aggregates()
     out = []
     for pos, row in result_df.iterrows():
         rec = meta_by_pos.get(pos)
@@ -544,7 +575,10 @@ def post_recommend():
         score = float(row["relevance_score"])
         if is_flagged_dangerous(rec.get("Precautions")) and score < DANGER_CONFIDENCE_THRESHOLD:
             continue
-        out.append(_herb_to_json(pos, rec, relevance_score=score, conditions=conditions))
+        out.append(_herb_to_json(
+            pos, rec, relevance_score=score, conditions=conditions,
+            rating_aggregates=rating_aggregates,
+        ))
         if len(out) >= top_n:
             break
     return jsonify(out)
