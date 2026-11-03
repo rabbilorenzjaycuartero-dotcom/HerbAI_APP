@@ -4,6 +4,11 @@
 firebase-service-account.json
 .qodo
 
+# Bind-mounted at runtime (see docker-compose.yml) so it survives container
+# rebuilds -- the whole point is detecting herbs added since the last
+# rebuild, which doesn't work if a fresh image always starts with no cache.
+known_herbs_cache.json
+
 # Python
 __pycache__/
 *.pyc

@@ -1,0 +1,12 @@
+services:
+  herbia-test:
+    build: .
+    container_name: herbia-test
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
+      - ./known_herbs_cache.json:/app/known_herbs_cache.json
+    restart: unless-stopped

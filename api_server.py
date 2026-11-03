@@ -49,6 +49,7 @@ with the service_role key (which bypasses bucket access rules) and streams
 them back through our own /images/<file> route, so the client's imageUrl
 shape never changes and no Flutter code needed to change for this move.
 """
+import json
 import mimetypes
 import os
 import random
@@ -64,6 +65,7 @@ from dotenv import load_dotenv
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials as firebase_credentials
 from firebase_admin import firestore as firebase_firestore
+from firebase_admin import messaging as firebase_messaging
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 from supabase import create_client
@@ -81,6 +83,8 @@ EXTRACTOR_PATH = "models/symptom_extractor.joblib"
 MAX_SYMPTOM_TEXT_LENGTH = 500
 RAW_CSV = "HERBAL_DB - Sheet5_final.csv"
 PREPROCESSED_CSV = "herbal_preprocessed_1.csv"
+KNOWN_HERBS_CACHE = "known_herbs_cache.json"
+NEW_HERBS_FCM_TOPIC = "new_herbs"
 
 app = Flask(__name__)
 CORS(app)
@@ -228,6 +232,58 @@ for col in ["Symptoms", "Preparation", "Precautions", "Botany", "Source URL"]:
     meta_df[col] = raw_df[col].values
 meta_by_pos = meta_df.to_dict("index")
 print(f"Loaded {len(meta_by_pos)} herbs, {len(symptom_cols)} symptoms.")
+
+
+def _broadcast_new_herbs():
+    """Diffs the just-loaded herb set against a cached snapshot from the
+    last run and sends one FCM broadcast (topic: new_herbs) per herb that
+    wasn't there before. There's no admin endpoint for adding herbs -- they
+    only ever enter via manually editing the CSVs and restarting this
+    process, so "on startup" is the only point where "new herb" can ever be
+    detected, and this runs right here rather than adding a separate script.
+    On the very first run (no cache file yet), every currently-loaded herb
+    would otherwise look "new" -- that run only writes the snapshot and
+    sends nothing, so rollout doesn't blast one notification per existing
+    herb in the database.
+    """
+    current_ids = {str(pos) for pos in meta_by_pos}
+
+    previous_ids = None
+    if os.path.exists(KNOWN_HERBS_CACHE):
+        try:
+            with open(KNOWN_HERBS_CACHE, "r", encoding="utf-8") as f:
+                previous_ids = set(json.load(f))
+        except Exception as error:
+            print(f"WARNING: could not read {KNOWN_HERBS_CACHE} ({error!r}); skipping new-herb broadcast this run.")
+
+    if previous_ids is not None and _firebase_admin_ready:
+        new_ids = current_ids - previous_ids
+        for pos in sorted(new_ids, key=int):
+            name = meta_by_pos[int(pos)]["Herbal Name"]
+            try:
+                message_id = firebase_messaging.send(
+                    firebase_messaging.Message(
+                        notification=firebase_messaging.Notification(
+                            title="New herb added to HERBAI",
+                            body=f"{name} is now in the database -- check it out!",
+                        ),
+                        topic=NEW_HERBS_FCM_TOPIC,
+                    )
+                )
+                print(f"Broadcast new herb '{name}' (id {pos}): sent message id {message_id}")
+            except Exception as error:
+                print(f"WARNING: failed to broadcast new herb '{name}' (id {pos}): {error!r}")
+    elif previous_ids is not None and not _firebase_admin_ready:
+        print(f"Firebase Admin SDK unavailable; skipping new-herb broadcast for {len(current_ids - previous_ids)} new herb(s).")
+
+    try:
+        with open(KNOWN_HERBS_CACHE, "w", encoding="utf-8") as f:
+            json.dump(sorted(current_ids, key=int), f)
+    except Exception as error:
+        print(f"WARNING: could not write {KNOWN_HERBS_CACHE} ({error!r}); new-herb detection may be inaccurate next run.")
+
+
+_broadcast_new_herbs()
 
 
 def _split_sentences(text):

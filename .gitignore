@@ -6,6 +6,10 @@ firebase-service-account.json
 __pycache__/
 *.pyc
 
+# Generated at runtime by api_server.py's new-herb FCM broadcast (diffs the
+# current herb set against this snapshot on each startup) -- not source data.
+known_herbs_cache.json
+
 # Large assets not needed at runtime (images now live in Supabase Storage;
 # api_server.py only reads "HERBAL_DB - Sheet5_final.csv" and
 # herbal_preprocessed_1.csv, not the other sheets/raw exports below)
