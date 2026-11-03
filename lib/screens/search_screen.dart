@@ -115,7 +115,7 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 32),
           SectionHeader(title: context.tr('popular_searches')),
           const SizedBox(height: 16),
-          ...plantProvider.plants.take(5).map((plant) => ListTile(
+          ...plantProvider.getPopularPlants().take(5).map((plant) => ListTile(
                 leading: CircleAvatar(
                   backgroundColor: AppTheme.primaryLight,
                   child: const Icon(Icons.eco, color: Colors.white),
