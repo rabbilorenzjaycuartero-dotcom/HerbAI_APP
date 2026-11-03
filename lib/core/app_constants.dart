@@ -17,8 +17,12 @@ class AppConstants {
   // is reachable from the device/emulator you're testing on:
   //   - Android emulator:      http://10.0.2.2:5000
   //   - iOS simulator:         http://127.0.0.1:5000
-  //   - Physical device:       http://<host machine's LAN IP>:5000
-  static const String apiBaseUrl = 'http://127.0.0.1:5000';
+  //   - Physical device (USB): http://127.0.0.1:5000 (with `adb reverse tcp:5000 tcp:5000`)
+  //   - Physical device (any network, no USB): the Cloudflare Tunnel quick-tunnel
+  //     URL currently printed by `cloudflared tunnel --url http://localhost:5000`
+  //     -- note this URL changes every time that tunnel process is restarted,
+  //     since it's the free account-less "quick tunnel" (no custom domain yet).
+  static const String apiBaseUrl = 'https://mainland-allowed-evans-evident.trycloudflare.com';
 
   static const List<String> categories = [
     'Cough',
