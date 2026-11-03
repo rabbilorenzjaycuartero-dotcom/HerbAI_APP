@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../models/plant_model.dart';
-import '../core/mock_data.dart';
 import '../services/api_service.dart';
 import '../services/favorites_service.dart';
 import '../services/firebase_auth_service.dart';
@@ -10,7 +9,7 @@ import '../services/settings_service.dart';
 class PlantProvider with ChangeNotifier {
   List<Plant> _plants = [];
   List<Plant> _favorites = [];
-  List<String> _recentSearches = [];
+  final List<String> _recentSearches = [];
   bool _isLoading = false;
 
   List<Plant> get plants => _plants;
@@ -39,10 +38,6 @@ class PlantProvider with ChangeNotifier {
       debugPrint('Failed to load plants: $e');
       _plants = [];
     }
-    // Recent-searches seed list is just demo UI content, unrelated to herb
-    // data, so it still comes from mock_data.dart.
-    _recentSearches = MockData.getRecentSearches();
-
     _isLoading = false;
     notifyListeners();
     await _loadFavorites();
