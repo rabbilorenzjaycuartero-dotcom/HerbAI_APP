@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../providers/symptom_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
@@ -47,14 +48,14 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Describe Your Symptoms'),
+      appBar: CustomAppBar(title: context.tr('describe_your_symptoms')),
       body: Stack(
         children: [
           const DecorativeBlobs(),
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
+                _buildHeader(context),
                 _buildInputField(),
                 Expanded(
                   child: SingleChildScrollView(
@@ -77,7 +78,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
@@ -85,7 +86,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'How are you feeling?',
+            context.tr('how_are_you_feeling'),
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary,
@@ -93,8 +94,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Describe your symptoms in English, Bisaya, or Tagalog. '
-            'We will pick the matching symptoms for you.',
+            context.tr('describe_symptoms_multilang_blurb'),
             style: TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 15,
@@ -121,7 +121,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
             onSubmitted: (_) => _detectSymptoms(),
             decoration: InputDecoration(
               counterText: '',
-              hintText: 'e.g. "headache and fever" or "sakit akong ulo"',
+              hintText: context.tr('describe_symptoms_example_hint'),
               hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.6)),
               prefixIcon: Icon(Icons.edit_note_rounded, color: AppTheme.textSecondary),
               suffixIcon: provider.isExtractingSymptoms
@@ -134,7 +134,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
                       ),
                     )
                   : IconButton(
-                      tooltip: 'Detect symptoms',
+                      tooltip: context.tr('detect_symptoms_tooltip'),
                       icon: Icon(Icons.send_rounded, color: AppTheme.primary),
                       onPressed: _detectSymptoms,
                     ),
@@ -175,20 +175,20 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
             if (extraction != null) ...[
               for (final s in extraction.spellingSuggestions)
                 _buildFeedback(
-                  "Did you mean '${s.suggestion}' instead of '${s.typed}'? "
-                  'Please correct your spelling.',
+                  "${context.tr('did_you_mean')} '${s.suggestion}' ${context.tr('instead_of')} '${s.typed}'? "
+                  '${context.tr('please_correct_spelling')}',
                   Colors.orange.shade800,
                   Icons.spellcheck_rounded,
                 ),
               if (extraction.symptomIds.isEmpty)
                 _buildFeedback(
-                  'No matching symptom found. Try rephrasing or check spelling.',
+                  context.tr('no_matching_symptom'),
                   AppTheme.textSecondary,
                   Icons.search_off_rounded,
                 )
               else
                 _buildFeedback(
-                  'Found ${extraction.symptomIds.length} symptom(s) from your description.',
+                  '${context.tr('found_symptoms_prefix')} ${extraction.symptomIds.length} ${context.tr('found_symptoms_suffix')}',
                   AppTheme.primary,
                   Icons.check_circle_outline_rounded,
                 ),
@@ -231,7 +231,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Detected symptoms (tap x to remove)',
+                context.tr('detected_symptoms_tap_remove'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -283,7 +283,7 @@ class _DescribeSymptomsScreenState extends State<DescribeSymptomsScreen> {
           ),
           child: SafeArea(
             child: CustomButton(
-              text: 'Get Recommendations',
+              text: context.tr('get_recommendations'),
               onPressed: provider.hasSelectedSymptoms
                   ? () {
                       context.push('/health-check');

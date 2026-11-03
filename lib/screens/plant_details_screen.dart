@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/plant_model.dart';
 import '../providers/plant_provider.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/plant_rating_section.dart';
 import '../widgets/plant_reviews_section.dart';
@@ -37,13 +38,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           : plant.name,
       if (plant.description.isNotEmpty) plant.description,
       if (plant.medicinalUses.isNotEmpty)
-        'Medicinal Uses:\n${plant.medicinalUses.map((u) => '• $u').join('\n')}',
+        '${context.trRead('medicinal_uses')}:\n${plant.medicinalUses.map((u) => '• $u').join('\n')}',
       if (plant.preparationMethods.isNotEmpty)
-        'Preparation Methods:\n${plant.preparationMethods.map((m) => '• $m').join('\n')}',
+        '${context.trRead('preparation_methods')}:\n${plant.preparationMethods.map((m) => '• $m').join('\n')}',
       if (plant.safetyWarnings.isNotEmpty)
-        'Safety Warnings:\n${plant.safetyWarnings.map((w) => '• $w').join('\n')}',
-      if (plant.sourceUrl.isNotEmpty) 'Source: ${plant.sourceUrl}',
-      'Shared via HERBAI',
+        '${context.trRead('safety_warnings')}:\n${plant.safetyWarnings.map((w) => '• $w').join('\n')}',
+      if (plant.sourceUrl.isNotEmpty) '${context.trRead('source_label')}: ${plant.sourceUrl}',
+      context.trRead('shared_via_herbai'),
     ];
     Share.share(parts.join('\n\n'));
   }
@@ -91,19 +92,19 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  _buildDescription(),
+                  _buildDescription(context),
                   const SizedBox(height: 24),
-                  _buildSection('Medicinal Uses', plant.medicinalUses, Icons.healing),
+                  _buildSection(context.tr('medicinal_uses'), plant.medicinalUses, Icons.healing),
                   const SizedBox(height: 24),
-                  _buildSection('Preparation Methods', plant.preparationMethods, Icons.medical_services),
+                  _buildSection(context.tr('preparation_methods'), plant.preparationMethods, Icons.medical_services),
                   const SizedBox(height: 24),
                   if (plant.conditionWarnings.isNotEmpty) ...[
-                    _buildConditionWarnings(),
+                    _buildConditionWarnings(context),
                     const SizedBox(height: 24),
                   ],
-                  _buildSafetyWarnings(),
+                  _buildSafetyWarnings(context),
                   const SizedBox(height: 24),
-                  _buildEthnobotanicalInfo(),
+                  _buildEthnobotanicalInfo(context),
                   const SizedBox(height: 24),
                   PlantReviewsSection(
                     key: ValueKey(_reviewsRefreshToken),
@@ -172,13 +173,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  Widget _buildDescription() {
+  Widget _buildDescription(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Description',
-          style: TextStyle(
+        Text(
+          context.tr('description_label'),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -203,11 +204,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           children: [
             Icon(icon, color: AppTheme.primary),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -243,7 +246,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  Widget _buildConditionWarnings() {
+  Widget _buildConditionWarnings(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,11 +254,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           children: [
             const Icon(Icons.priority_high_rounded, color: Colors.red),
             const SizedBox(width: 8),
-            const Text(
-              'Relevant to You',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                context.tr('relevant_to_you'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -288,7 +293,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  Widget _buildSafetyWarnings() {
+  Widget _buildSafetyWarnings(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -296,11 +301,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
           children: [
             const Icon(Icons.warning_amber, color: Colors.orange),
             const SizedBox(width: 8),
-            const Text(
-              'Safety Warnings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                context.tr('safety_warnings'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -326,13 +333,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     );
   }
 
-  Widget _buildEthnobotanicalInfo() {
+  Widget _buildEthnobotanicalInfo(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Traditional Knowledge',
-          style: TextStyle(
+        Text(
+          context.tr('traditional_knowledge'),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -364,7 +371,7 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'View source',
+                            context.tr('view_source'),
                             style: TextStyle(
                               color: AppTheme.primary,
                               fontWeight: FontWeight.w600,

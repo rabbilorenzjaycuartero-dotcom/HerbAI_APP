@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
+import '../core/context_extensions.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -7,23 +8,23 @@ class PrivacyPolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Privacy Policy'),
+      appBar: CustomAppBar(title: context.tr('privacy_policy')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Privacy Policy',
-                style: TextStyle(
+              Text(
+                context.tr('privacy_policy'),
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Last Updated: July 2026',
+                context.tr('last_updated_july_2026'),
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 14,
@@ -31,28 +32,28 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               _buildSection(
-                '1. Data Collection',
-                'HERBAI is designed to prioritize your privacy. Currently, the application operates entirely locally on your device and does not collect any personal data, user information, or usage statistics. All data, including your favorite plants, settings, and search history, is stored locally on your device using SharedPreferences.',
+                context.tr('pp_section_1_title'),
+                context.tr('pp_section_1_body'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                '2. User Privacy',
-                'We are committed to protecting your privacy. Since no data is collected from your device, there is no risk of your personal information being shared, sold, or accessed by third parties. Your herbal plant preferences and usage remain completely private and confidential.',
+                context.tr('pp_section_2_title'),
+                context.tr('pp_section_2_body'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                '3. Local Storage',
-                'All application data is stored locally on your mobile device. This includes:\n• Theme preferences (light/dark mode)\n• Notification settings\n• Language selection\n• Favorite plants\n• Recent searches\n\nYou can clear this data at any time by resetting your settings within the application or by uninstalling the app.',
+                context.tr('pp_section_3_title'),
+                context.tr('pp_section_3_body'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                '4. Future AI Features',
-                'Future versions of HERBAI may include AI-driven features such as plant identification and personalized recommendations. These features will be optional, and we will update this privacy policy accordingly before implementing any changes that involve data collection or processing outside of your device.',
+                context.tr('pp_section_4_title'),
+                context.tr('pp_section_4_body'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                '5. Contact Information',
-                'If you have any questions or concerns about this privacy policy or the HERBAI application, please contact us at:\n\nEmail: privacy@herbai.app\nAddress: Herbal Research Institute, Cebu, Philippines',
+                context.tr('pp_section_5_title'),
+                context.tr('pp_section_5_body'),
               ),
             ],
           ),

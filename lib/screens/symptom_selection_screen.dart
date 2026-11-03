@@ -7,6 +7,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/decorative_blobs.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../models/plant_model.dart';
 
 class SymptomSelectionScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Select Your Symptoms',
+        title: context.tr('select_your_symptoms'),
       ),
       body: Stack(
         children: [
@@ -38,8 +39,8 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildHeader(),
-                _buildSearchBar(),
+                _buildHeader(context),
+                _buildSearchBar(context),
                 _buildSelectedSymptoms(),
                 Expanded(child: _buildSymptomsList()),
                 _buildBottomButton(),
@@ -51,14 +52,14 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'What symptoms are you experiencing?',
+            context.tr('what_symptoms_experiencing'),
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary,
@@ -66,7 +67,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose all symptoms you are currently experiencing',
+            context.tr('choose_all_symptoms'),
             style: TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 15,
@@ -78,7 +79,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: TextField(
@@ -89,7 +90,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
           });
         },
         decoration: InputDecoration(
-          hintText: 'Search symptoms...',
+          hintText: context.tr('search_symptoms_hint'),
           hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.6)),
           prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textSecondary),
           suffixIcon: _searchQuery.isNotEmpty
@@ -137,7 +138,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
               Row(
                 children: [
                   Text(
-                    'Selected Symptoms',
+                    context.tr('selected_symptoms'),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -197,7 +198,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
         final filteredSymptoms = _getFilteredSymptoms(provider);
 
         if (filteredSymptoms.isEmpty) {
-          return _buildEmptyState();
+          return _buildEmptyState(context);
         }
 
         return ListView(
@@ -205,7 +206,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
           children: [
             if (_searchQuery.isNotEmpty) ...[
               Text(
-                'Search Results',
+                context.tr('search_results'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -233,7 +234,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(48),
@@ -247,7 +248,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No symptoms found',
+              context.tr('no_symptoms_found'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -256,7 +257,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Try adjusting your search terms',
+              context.tr('try_adjusting_search'),
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.textSecondary.withValues(alpha: 0.7),
@@ -295,7 +296,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
           ),
           child: SafeArea(
             child: CustomButton(
-              text: 'Continue',
+              text: context.tr('continue_label'),
               onPressed: provider.hasSelectedSymptoms
                   ? () {
                       context.push('/health-check');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/rating_service.dart';
 import 'custom_button.dart';
@@ -64,13 +65,13 @@ class _RatePlantModalState extends State<RatePlantModal> {
     final user = FirebaseAuthService.currentUser;
     if (user?.uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to rate this plant.')),
+        SnackBar(content: Text(context.trRead('sign_in_to_rate'))),
       );
       return;
     }
     if (_pendingRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tap a star to choose a rating first.')),
+        SnackBar(content: Text(context.trRead('tap_star_first'))),
       );
       return;
     }
@@ -84,7 +85,7 @@ class _RatePlantModalState extends State<RatePlantModal> {
         comment: _commentController.text.trim(),
         userName: user.displayName?.trim().isNotEmpty == true
             ? user.displayName!.trim()
-            : 'Herbal Enthusiast',
+            : context.trRead('herbal_enthusiast'),
       );
       if (!mounted) return;
       widget.onPosted();
@@ -94,7 +95,7 @@ class _RatePlantModalState extends State<RatePlantModal> {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save your rating. Please try again.')),
+        SnackBar(content: Text(context.trRead('could_not_save_rating'))),
       );
     }
   }
@@ -123,9 +124,9 @@ class _RatePlantModalState extends State<RatePlantModal> {
               ),
             ),
           ),
-          const Text(
-            'Rate this plant',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            context.tr('rate_this_plant'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Center(
@@ -143,7 +144,7 @@ class _RatePlantModalState extends State<RatePlantModal> {
             enabled: !_isSubmitting,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'Share your experience with this plant (optional)',
+              hintText: context.tr('share_experience_optional'),
               filled: true,
               fillColor: AppTheme.surface,
               border: OutlineInputBorder(
@@ -156,7 +157,7 @@ class _RatePlantModalState extends State<RatePlantModal> {
           SizedBox(
             width: double.infinity,
             child: CustomButton(
-              text: 'Post Review',
+              text: context.tr('post_review'),
               isLoading: _isSubmitting,
               onPressed: _isSubmitting ? null : _postReview,
             ),

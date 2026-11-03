@@ -10,6 +10,7 @@ import '../widgets/section_header.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/loading_widget.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -71,8 +72,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   Expanded(
                     child: _isSearching
-                        ? _buildSearchResults()
-                        : _buildRecentSearches(plantProvider),
+                        ? _buildSearchResults(context)
+                        : _buildRecentSearches(context, plantProvider),
                   ),
                 ],
               ),
@@ -80,12 +81,12 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildRecentSearches(PlantProvider plantProvider) {
+  Widget _buildRecentSearches(BuildContext context, PlantProvider plantProvider) {
     if (plantProvider.recentSearches.isEmpty) {
-      return const EmptyStateWidget(
+      return EmptyStateWidget(
         icon: Icons.search,
-        title: 'No Recent Searches',
-        subtitle: 'Start searching for herbal plants and remedies',
+        title: context.tr('no_recent_searches'),
+        subtitle: context.tr('start_searching_blurb'),
       );
     }
 
@@ -95,8 +96,8 @@ class _SearchScreenState extends State<SearchScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
-            title: 'Recent Searches',
-            actionText: 'Clear',
+            title: context.tr('recent_searches'),
+            actionText: context.tr('clear'),
             onActionTap: () {
               plantProvider.clearRecentSearches();
             },
@@ -112,7 +113,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 },
               )),
           const SizedBox(height: 32),
-          const SectionHeader(title: 'Popular Searches'),
+          SectionHeader(title: context.tr('popular_searches')),
           const SizedBox(height: 16),
           ...plantProvider.plants.take(5).map((plant) => ListTile(
                 leading: CircleAvatar(
@@ -130,12 +131,12 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSearchResults() {
+  Widget _buildSearchResults(BuildContext context) {
     if (_searchResults.isEmpty) {
-      return const EmptyStateWidget(
+      return EmptyStateWidget(
         icon: Icons.search_off,
-        title: 'No Results Found',
-        subtitle: 'Try searching with different keywords',
+        title: context.tr('no_results_found'),
+        subtitle: context.tr('try_different_keywords'),
       );
     }
 

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/app_constants.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../providers/symptom_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
@@ -14,7 +15,7 @@ class HealthCheckScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Before We Recommend'),
+      appBar: CustomAppBar(title: context.tr('before_we_recommend')),
       body: Stack(
         children: [
           const DecorativeBlobs(),
@@ -28,7 +29,7 @@ class HealthCheckScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Does any of this apply right now?',
+                          context.tr('does_any_apply'),
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.textPrimary,
@@ -36,8 +37,7 @@ class HealthCheckScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Some herbs carry extra precautions for these. '
-                          'Select any that apply so we can flag them for you.',
+                          context.tr('health_conditions_blurb'),
                           style: TextStyle(
                             color: AppTheme.textSecondary,
                             fontSize: 15,
@@ -68,7 +68,7 @@ class HealthCheckScreen extends StatelessWidget {
           children: AppConstants.healthConditions
               .map(
                 (condition) => _ConditionChip(
-                  label: condition.name,
+                  label: context.tr(condition.id),
                   isSelected: provider.selectedConditions.contains(condition.id),
                   onTap: () => provider.toggleCondition(condition.id),
                 ),
@@ -94,7 +94,7 @@ class HealthCheckScreen extends StatelessWidget {
       ),
       child: SafeArea(
         child: CustomButton(
-          text: 'Continue',
+          text: context.tr('continue_label'),
           onPressed: () => context.push('/recommendations'),
           borderRadius: 30,
         ),

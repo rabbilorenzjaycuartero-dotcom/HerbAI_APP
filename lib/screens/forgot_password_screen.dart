@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
@@ -47,7 +48,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _emailErrorText = 'No account found for that email.';
+        _emailErrorText = context.trRead('no_account_for_email');
       });
       return;
     }
@@ -115,28 +116,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Reset Password',
+                        context.tr('reset_password'),
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Enter your email and we'll send you a link to reset your password.",
+                        context.tr('enter_email_reset_blurb'),
                         style: TextStyle(color: AppTheme.textSecondary),
                       ),
                       const SizedBox(height: 36),
                       CustomTextField(
-                        hintText: 'Email',
+                        hintText: context.tr('email_hint'),
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         prefixIcon: const Icon(Icons.email_outlined),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your email';
+                            return context.trRead('please_enter_email');
                           }
                           if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
-                            return 'Please enter a valid email';
+                            return context.trRead('please_enter_valid_email');
                           }
                           return null;
                         },
@@ -162,7 +163,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: CustomButton(
-                          text: 'Send reset link',
+                          text: context.tr('send_reset_link'),
                           onPressed: _isLoading ? null : _handleSendReset,
                           isLoading: _isLoading,
                           borderRadius: 30,
@@ -173,7 +174,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         child: TextButton(
                           onPressed: () => context.go('/login'),
                           child: Text(
-                            'Back to login',
+                            context.tr('back_to_login'),
                             style: TextStyle(
                               color: AppTheme.primary,
                               fontWeight: FontWeight.bold,

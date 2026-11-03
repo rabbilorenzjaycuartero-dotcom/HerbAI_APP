@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_appbar.dart';
 import '../core/app_theme.dart';
 import '../core/app_constants.dart';
+import '../core/context_extensions.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -9,7 +10,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'About HERBAI'),
+      appBar: CustomAppBar(title: context.tr('about_herbai_title')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -38,46 +39,51 @@ class AboutScreen extends StatelessWidget {
                   color: AppTheme.primary,
                 ),
               ),
-              const Text(
-                'Version 1.0.0',
-                style: TextStyle(fontSize: 16),
+              Text(
+                context.tr('version_1_0_0'),
+                style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Developer: Herbal Research Team',
-                style: TextStyle(fontSize: 14),
+              Text(
+                context.tr('developer_team'),
+                style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 32),
               _buildSection(
-                'Research Title',
-                'AI-Driven Integration of Ethnobotanical Knowledge: A Mobile System for Local Herbal Plant Recommendations',
+                context,
+                context.tr('research_title_label'),
+                context.tr('research_title_value'),
                 isBold: true,
               ),
               const SizedBox(height: 24),
               _buildSection(
-                'App Description',
-                'HERBAI is a modern healthcare application that preserves and promotes ethnobotanical herbal knowledge. The application allows users to explore herbal plants, search medicinal information, save favorite plants, and prepares for future AI-powered herbal recommendations and plant image identification.',
+                context,
+                context.tr('app_description_label'),
+                context.tr('app_description_value'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                'Our Mission',
-                'To bridge the gap between traditional herbal knowledge and modern technology, making natural remedies accessible, reliable, and easy to discover for everyone worldwide.',
+                context,
+                context.tr('our_mission_label'),
+                context.tr('our_mission_value'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                'Our Vision',
-                'A world where traditional herbal wisdom is preserved, respected, and integrated with modern healthcare practices for the benefit of all.',
+                context,
+                context.tr('our_vision_label'),
+                context.tr('our_vision_value'),
               ),
               const SizedBox(height: 24),
               _buildSection(
-                'Research & Development',
-                'Our team works closely with botanists, traditional healers, and researchers to ensure accurate and reliable information. Future updates will include AI-powered recommendations and plant identification.',
+                context,
+                context.tr('research_development_label'),
+                context.tr('research_development_value'),
               ),
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 16),
               Text(
-                '© 2026 HERBAI. All rights reserved.',
+                context.tr('copyright_herbai'),
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14,
@@ -90,7 +96,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String title, String content, {bool isBold = false}) {
+  Widget _buildSection(BuildContext context, String title, String content, {bool isBold = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

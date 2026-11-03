@@ -9,6 +9,7 @@ import '../widgets/custom_search_bar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/decorative_blobs.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -40,7 +41,7 @@ class HomeScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
-                      'Welcome to HERBAI',
+                      context.tr('welcome_to_herbai'),
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.primary,
@@ -48,7 +49,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Discover the power of herbal medicine',
+                    context.tr('discover_herbal_medicine'),
                     style: TextStyle(
                       fontSize: 16,
                       color: AppTheme.textSecondary,
@@ -56,7 +57,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   CustomSearchBar(
-                    hintText: 'Search herbal plants...',
+                    hintText: context.tr('search_herbal_plants_hint'),
                     onTap: () => context.push('/search'),
                   ),
                   const SizedBox(height: 24),
@@ -69,7 +70,7 @@ class HomeScreen extends StatelessWidget {
 
                   // Featured Plants
                   Text(
-                    'Featured Plants',
+                    context.tr('featured_plants'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -89,7 +90,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'No plants yet',
+                                context.tr('no_plants_yet'),
                                 style: TextStyle(color: AppTheme.textSecondary),
                               ),
                             ],
@@ -122,7 +123,9 @@ class HomeScreen extends StatelessWidget {
 
                   // Recent Searches / Recommendations
                   Text(
-                    hasRecommendations ? 'Your Recommendations' : 'Recently Viewed',
+                    hasRecommendations
+                        ? context.tr('your_recommendations')
+                        : context.tr('recently_viewed'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -142,14 +145,14 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'No recommendations yet',
+                                context.tr('no_recommendations_yet'),
                                 style: TextStyle(color: AppTheme.textSecondary),
                               ),
                               const SizedBox(height: 16),
                               SizedBox(
                                 width: double.infinity,
                                 child: CustomButton(
-                                  text: 'Start Now',
+                                  text: context.tr('start_now'),
                                   onPressed: () {
                                     context.push('/symptoms');
                                   },
@@ -220,16 +223,16 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Describe Your Symptoms',
-                      style: TextStyle(
+                    Text(
+                      context.tr('describe_your_symptoms'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Type how you feel in your own words',
+                      context.tr('type_how_you_feel'),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppTheme.textSecondary,
@@ -279,16 +282,16 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Browse All Plants',
-                      style: TextStyle(
+                    Text(
+                      context.tr('browse_all_plants'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Explore our full herbal plant library',
+                      context.tr('explore_plant_library'),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppTheme.textSecondary,
@@ -357,8 +360,8 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Start Herbal Recommendation',
-                          style: TextStyle(
+                          context.tr('start_herbal_recommendation'),
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -366,7 +369,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Select your symptoms and let HERBAI\'s AI recommend the most suitable medicinal plants.',
+                          context.tr('select_symptoms_ai_blurb'),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.9),
@@ -391,12 +394,16 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.search, color: AppTheme.primary, size: 20),
                     const SizedBox(width: 8),
-                    Text(
-                      'Start Recommendation',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
+                    Flexible(
+                      child: Text(
+                        context.tr('start_recommendation'),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primary,
+                        ),
                       ),
                     ),
                   ],

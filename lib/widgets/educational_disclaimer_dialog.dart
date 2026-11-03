@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import 'custom_button.dart';
 
 /// Must-accept notice shown on every login clarifying HERBAI is an
@@ -49,7 +50,7 @@ class EducationalDisclaimerDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Educational Use Notice',
+                  context.tr('educational_use_notice'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -57,27 +58,14 @@ class EducationalDisclaimerDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'HERBAI is developed strictly for educational and research '
-                  'purposes as a Capstone Project by students of Caraga State '
-                  'University – Cabadbaran Campus (CSUCC).\n\n'
-                  'The herbal recommendations and information provided are '
-                  'based on gathered ethnobotanical knowledge and an AI model '
-                  'still under development. They are not a substitute for '
-                  'professional medical advice, diagnosis, or treatment. '
-                  'Always consult a licensed healthcare professional before '
-                  'using any herbal remedy.\n\n'
-                  'This project is intended for further development and '
-                  'deployment under the Forestry Program of Caraga State '
-                  'University – Main Campus.\n\n'
-                  'By tapping "I Understand & Accept," you acknowledge that '
-                  'you are using this app for educational purposes only.',
+                  context.tr('educational_disclaimer_body'),
                   style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: CustomButton(
-                    text: 'I Understand & Accept',
+                    text: context.tr('i_understand_accept'),
                     onPressed: () => Navigator.of(context).pop(),
                     borderRadius: 30,
                   ),

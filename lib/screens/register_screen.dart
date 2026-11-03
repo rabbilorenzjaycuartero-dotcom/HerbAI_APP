@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
@@ -93,8 +94,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created. Please verify your email.'),
+        SnackBar(
+          content: Text(context.trRead('account_created_verify')),
           backgroundColor: AppTheme.primary,
         ),
       );
@@ -153,44 +154,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Create Account',
+                      context.tr('create_account'),
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Create a simple account to get started',
+                      context.tr('create_simple_account'),
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 36),
                     CustomTextField(
-                      hintText: 'Full Name',
+                      hintText: context.tr('full_name_hint'),
                   controller: _nameController,
                   prefixIcon: const Icon(Icons.person_outlined),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your name';
+                      return context.trRead('please_enter_name');
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
                 CustomTextField(
-                  hintText: 'Email',
+                  hintText: context.tr('email_hint'),
                   controller: _emailController,
                   focusNode: _emailFocusNode,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
+                      return context.trRead('please_enter_email');
                     }
                     if (!_emailFormatPattern.hasMatch(value)) {
-                      return 'Please enter a valid email';
+                      return context.trRead('please_enter_valid_email');
                     }
                     if (_emailExists == true) {
-                      return 'This email is already registered';
+                      return context.trRead('email_already_registered');
                     }
                     return null;
                   },
@@ -200,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
-                      'Checking email...',
+                      context.tr('checking_email'),
                       style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                   )
@@ -213,7 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'This email is already registered.',
+                            context.tr('email_already_registered'),
                             style: TextStyle(fontSize: 12, color: Colors.red),
                           ),
                         ),
@@ -222,7 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 const SizedBox(height: 16),
                 CustomTextField(
-                  hintText: 'Password',
+                  hintText: context.tr('password_hint'),
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   prefixIcon: const Icon(Icons.lock_outlined),
@@ -238,22 +239,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return context.trRead('please_enter_password');
                     }
                     if (value.length < 8) {
-                      return 'Password must be at least 8 characters';
+                      return context.trRead('password_min_length');
                     }
                     if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return 'Password must contain an uppercase letter';
+                      return context.trRead('password_needs_uppercase');
                     }
                     if (!RegExp(r'[a-z]').hasMatch(value)) {
-                      return 'Password must contain a lowercase letter';
+                      return context.trRead('password_needs_lowercase');
                     }
                     if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return 'Password must contain a number';
+                      return context.trRead('password_needs_number');
                     }
                     if (!_specialCharacterPattern.hasMatch(value)) {
-                      return 'Password must contain a special character';
+                      return context.trRead('password_needs_special');
                     }
                     return null;
                   },
@@ -261,28 +262,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 _buildRequirementRow(
-                  '8+ characters',
+                  context.tr('req_8_characters'),
                   _passwordController.text.length >= 8,
                 ),
                 _buildRequirementRow(
-                  'Uppercase letter',
+                  context.tr('req_uppercase'),
                   RegExp(r'[A-Z]').hasMatch(_passwordController.text),
                 ),
                 _buildRequirementRow(
-                  'Lowercase letter',
+                  context.tr('req_lowercase'),
                   RegExp(r'[a-z]').hasMatch(_passwordController.text),
                 ),
                 _buildRequirementRow(
-                  'Number',
+                  context.tr('req_number'),
                   RegExp(r'[0-9]').hasMatch(_passwordController.text),
                 ),
                 _buildRequirementRow(
-                  'Special character',
+                  context.tr('req_special_char'),
                   _specialCharacterPattern.hasMatch(_passwordController.text),
                 ),
                 const SizedBox(height: 8),
                 CustomTextField(
-                  hintText: 'Confirm Password',
+                  hintText: context.tr('confirm_password_hint'),
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   prefixIcon: const Icon(Icons.lock_outlined),
@@ -298,22 +299,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return context.trRead('please_confirm_password');
                     }
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return context.trRead('passwords_do_not_match');
                     }
                     return null;
                   },
                   onChanged: (_) => setState(() {}),
                 ),
                 if (_confirmPasswordController.text.isNotEmpty)
-                  _buildConfirmPasswordStatus(),
+                  _buildConfirmPasswordStatus(context),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
-                        text: 'Create Account',
+                        text: context.tr('create_account'),
                         onPressed: _isLoading ? null : _handleRegister,
                         isLoading: _isLoading,
                         borderRadius: 30,
@@ -324,12 +325,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: TextButton(
                         onPressed: () => context.go('/login'),
                         child: Text.rich(
-                          const TextSpan(
+                          TextSpan(
                             children: [
-                              TextSpan(text: 'Already have an account? '),
+                              TextSpan(text: context.tr('already_have_account_q')),
                               TextSpan(
-                                text: 'Sign In',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                text: context.tr('sign_in'),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -369,7 +370,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildConfirmPasswordStatus() {
+  Widget _buildConfirmPasswordStatus(BuildContext context) {
     final matches = _confirmPasswordController.text == _passwordController.text;
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -382,7 +383,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            matches ? 'Passwords match' : 'Passwords do not match',
+            matches ? context.tr('passwords_match') : context.tr('passwords_do_not_match'),
             style: TextStyle(
               fontSize: 12,
               color: matches ? Colors.green : Colors.red,

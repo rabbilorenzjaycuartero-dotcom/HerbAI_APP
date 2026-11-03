@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/plant_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/rating_service.dart';
 import '../services/settings_service.dart';
@@ -52,21 +53,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text(context.tr('logout')),
+        content: Text(context.tr('logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
-              'Cancel',
+              context.tr('cancel'),
               style: TextStyle(color: AppTheme.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              'Logout',
-              style: TextStyle(color: Colors.red),
+              context.tr('logout'),
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -91,8 +92,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuthService.currentUser;
 
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Profile',
+      appBar: CustomAppBar(
+        title: context.tr('profile'),
         showBackButton: false,
       ),
       body: SafeArea(
@@ -100,9 +101,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             children: [
               const SizedBox(height: 24),
-              _buildProfileHeader(plantProvider, user),
+              _buildProfileHeader(context, plantProvider, user),
               const SizedBox(height: 32),
-              _buildStats(plantProvider),
+              _buildStats(context, plantProvider),
               const SizedBox(height: 32),
               _buildMenuItems(context),
             ],
@@ -112,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(PlantProvider plantProvider, AuthUser? user) {
+  Widget _buildProfileHeader(BuildContext context, PlantProvider plantProvider, AuthUser? user) {
     return Column(
       children: [
         CircleAvatar(
@@ -126,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          user?.displayName ?? 'Herbal Enthusiast',
+          user?.displayName ?? context.tr('herbal_enthusiast'),
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -141,13 +142,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStats(PlantProvider plantProvider) {
+  Widget _buildStats(BuildContext context, PlantProvider plantProvider) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildStatItem('Favorites', plantProvider.favorites.length),
-        _buildStatItem('Reviews', _reviewCount),
-        _buildStatItem('Searches', _searchCount),
+        _buildStatItem(context.tr('favorites'), plantProvider.favorites.length),
+        _buildStatItem(context.tr('reviews'), _reviewCount),
+        _buildStatItem(context.tr('searches'), _searchCount),
       ],
     );
   }
@@ -178,19 +179,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           _buildMenuItem(
             icon: Icons.edit,
-            title: 'Edit Profile',
+            title: context.tr('edit_profile'),
             onTap: _handleEditProfile,
           ),
           _buildMenuItem(
             icon: Icons.settings,
-            title: 'Settings',
+            title: context.tr('settings'),
             onTap: () {
               context.push('/settings');
             },
           ),
           _buildMenuItem(
             icon: Icons.info,
-            title: 'About HERBAI',
+            title: context.tr('about_herbai'),
             onTap: () {
               context.push('/about');
             },
@@ -198,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const Divider(height: 1),
           _buildMenuItem(
             icon: Icons.logout,
-            title: 'Logout',
+            title: context.tr('logout'),
             onTap: _handleLogout,
             isDestructive: true,
           ),

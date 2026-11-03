@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
@@ -45,8 +46,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       SnackBar(
         content: Text(
           sent
-              ? 'Verification code sent. Please check your inbox.'
-              : 'Could not send the code. Please try again.',
+              ? context.trRead('verification_code_sent')
+              : context.trRead('could_not_send_code'),
         ),
         backgroundColor: sent ? AppTheme.primary : Colors.red,
       ),
@@ -57,8 +58,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     final code = _codeController.text.trim();
     if (code.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter the 6-digit code from your email.'),
+        SnackBar(
+          content: Text(context.trRead('enter_6_digit_code')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -67,8 +68,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
     setState(() => _isVerifying = true);
     final token = await FirebaseAuthService.getIdToken();
+    if (!mounted) return;
     final error = token == null
-        ? 'Not signed in.'
+        ? context.trRead('not_signed_in')
         : await ApiService.verifyEmailCode(token, code);
     if (!mounted) return;
 
@@ -97,7 +99,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             children: [
               const SizedBox(height: 24),
               Text(
-                'Verify your email',
+                context.tr('verify_your_email'),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -105,7 +107,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'We sent a 6-digit code to ${FirebaseAuthService.currentUser?.email ?? "your email"}.',
+                '${context.tr('we_sent_6_digit_code_to')} ${FirebaseAuthService.currentUser?.email ?? context.tr('your_email_fallback')}.',
                 style: TextStyle(color: AppTheme.textSecondary),
                 textAlign: TextAlign.center,
               ),
@@ -130,12 +132,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               const SizedBox(height: 16),
               CustomButton(
-                text: _isVerifying ? 'Verifying...' : 'Verify',
+                text: _isVerifying ? context.tr('verifying') : context.tr('verify'),
                 onPressed: _isVerifying ? null : _verifyCode,
               ),
               const SizedBox(height: 12),
               CustomButton(
-                text: _isSending ? 'Sending...' : 'Resend code',
+                text: _isSending ? context.tr('sending') : context.tr('resend_code'),
                 onPressed: _isSending ? null : () => _sendCode(),
                 isOutlined: true,
               ),
@@ -147,7 +149,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     context.go('/login');
                   }
                 },
-                child: const Text('Sign out'),
+                child: Text(context.tr('sign_out')),
               ),
             ],
           ),

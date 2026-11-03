@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../core/app_strings.dart';
 import '../core/app_theme.dart';
 import '../services/settings_service.dart';
 
@@ -10,6 +11,8 @@ class ThemeProvider with ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
   bool get notificationsEnabled => _notificationsEnabled;
   String get selectedLanguage => _selectedLanguage;
+
+  String t(String key) => AppStrings.t(key, _selectedLanguage);
 
   ThemeProvider() {
     _loadPreferences();

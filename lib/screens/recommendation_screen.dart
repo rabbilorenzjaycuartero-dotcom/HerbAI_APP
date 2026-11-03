@@ -10,6 +10,7 @@ import '../widgets/recommendation_card.dart';
 import '../models/plant_model.dart';
 import '../core/app_theme.dart';
 import '../core/app_constants.dart';
+import '../core/context_extensions.dart';
 
 class RecommendationScreen extends StatefulWidget {
   const RecommendationScreen({super.key});
@@ -30,8 +31,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'Suggested Herbal Plants',
+      appBar: CustomAppBar(
+        title: context.tr('suggested_herbal_plants'),
       ),
       body: SafeArea(
         child: Consumer<SymptomProvider>(
@@ -49,18 +50,18 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '🌿 Suggested Herbal Plants Based on Your Selected Symptoms',
-                          style: TextStyle(
+                        Text(
+                          context.tr('suggested_plants_based_on_symptoms'),
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
                         if (provider.selectedSymptoms.isNotEmpty) ...[
-                          const Text(
-                            'Your Selected Symptoms:',
-                            style: TextStyle(
+                          Text(
+                            context.tr('your_selected_symptoms_colon'),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -90,7 +91,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                         else
                           ...plants.map((plant) => _buildPlantCard(context, plant)),
                         const SizedBox(height: 24),
-                        _buildDisclaimer(),
+                        _buildDisclaimer(context),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -108,9 +109,9 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Sort By:',
-          style: TextStyle(
+        Text(
+          context.tr('sort_by'),
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -124,7 +125,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
-                  label: Text(_getSortLabel(option)),
+                  label: Text(_getSortLabel(context, option)),
                   selected: isSelected,
                   onSelected: (_) {
                     provider.setSortOption(option);
@@ -150,9 +151,9 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Filters:',
-          style: TextStyle(
+        Text(
+          context.tr('filters_colon'),
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -164,7 +165,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
           children: AppConstants.filterOptions.map((filter) {
             final isSelected = provider.activeFilters.contains(filter);
             return FilterChip(
-              label: Text(filter),
+              label: Text(_getFilterLabel(context, filter)),
               selected: isSelected,
               onSelected: (_) {
                 provider.toggleFilter(filter);
@@ -187,10 +188,10 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   Widget _buildEmptyState(BuildContext context) {
     return EmptyStateWidget(
       icon: Icons.eco_outlined,
-      title: 'No herbal plants were found for the selected symptoms.',
+      title: context.tr('no_plants_for_symptoms'),
       subtitle: '',
       action: CustomButton(
-        text: 'Choose Different Symptoms',
+        text: context.tr('choose_different_symptoms'),
         onPressed: () {
           // A single context.pop() only lands back on Health Check (the
           // screen pushed just before this one, for both the /symptoms and
@@ -212,10 +213,10 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   Widget _buildErrorState(BuildContext context, SymptomProvider provider) {
     return EmptyStateWidget(
       icon: Icons.wifi_off_rounded,
-      title: provider.recommendationsError ?? 'Something went wrong.',
-      subtitle: 'Check your connection and try again.',
+      title: provider.recommendationsError ?? context.tr('something_went_wrong'),
+      subtitle: context.tr('check_connection_retry'),
       action: CustomButton(
-        text: 'Retry',
+        text: context.tr('retry'),
         onPressed: () => provider.fetchRecommendations(),
       ),
     );
@@ -230,7 +231,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     );
   }
 
-  Widget _buildDisclaimer() {
+  Widget _buildDisclaimer(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -245,19 +246,21 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
             children: [
               Icon(Icons.warning, color: Colors.orange.shade700),
               const SizedBox(width: 8),
-              Text(
-                'Educational Purpose Only',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade800,
+              Expanded(
+                child: Text(
+                  context.tr('educational_purpose_only'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade800,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'HERBAI provides educational information based on ethnobotanical knowledge. This application does not replace professional medical advice. Consult a licensed healthcare professional for proper diagnosis and treatment.',
+            context.tr('herbai_educational_disclaimer'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.orange.shade800,
@@ -269,14 +272,25 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
     );
   }
 
-  String _getSortLabel(SortOption option) {
+  String _getSortLabel(BuildContext context, SortOption option) {
     switch (option) {
       case SortOption.bestMatch:
-        return 'Best Match';
+        return context.tr('sort_best_match');
       case SortOption.highestRated:
-        return 'Highest Rated';
+        return context.tr('sort_highest_rated');
       case SortOption.alphabetical:
-        return 'Alphabetical';
+        return context.tr('sort_alphabetical');
+    }
+  }
+
+  String _getFilterLabel(BuildContext context, String filter) {
+    switch (filter) {
+      case 'Commonly Available':
+        return context.tr('filter_commonly_available');
+      case 'Easy to Prepare':
+        return context.tr('filter_easy_to_prepare');
+      default:
+        return filter;
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/rating_service.dart';
 import 'rate_plant_modal.dart';
@@ -94,7 +95,7 @@ class _PlantRatingSectionState extends State<PlantRatingSection> {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                '(${_aggregate.count} ${_aggregate.count == 1 ? 'rating' : 'ratings'})',
+                '(${_aggregate.count} ${_aggregate.count == 1 ? context.tr('rating_singular') : context.tr('rating_plural')})',
                 style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -102,7 +103,7 @@ class _PlantRatingSectionState extends State<PlantRatingSection> {
           ],
         ),
         const SizedBox(height: 10),
-        _buildRateButton(),
+        _buildRateButton(context),
       ],
     );
   }
@@ -110,7 +111,7 @@ class _PlantRatingSectionState extends State<PlantRatingSection> {
   // A soft tinted pill-chip, matching the look already used for the
   // selected-symptom chips elsewhere in the app, instead of a bare
   // outlined CustomButton that read as flat/plain here.
-  Widget _buildRateButton() {
+  Widget _buildRateButton(BuildContext context) {
     final isEditing = _myRating > 0;
     return Material(
       color: AppTheme.primary.withValues(alpha: 0.1),
@@ -130,7 +131,7 @@ class _PlantRatingSectionState extends State<PlantRatingSection> {
               ),
               const SizedBox(width: 6),
               Text(
-                isEditing ? 'Edit Review' : 'Rate & Review',
+                isEditing ? context.tr('edit_review') : context.tr('rate_and_review'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_constants.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/decorative_blobs.dart';
 
@@ -87,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
           SafeArea(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
-              child: _showWelcome ? _buildWelcome() : _buildSplash(),
+              child: _showWelcome ? _buildWelcome(context) : _buildSplash(context),
             ),
           ),
         ],
@@ -107,7 +108,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildSplash() {
+  Widget _buildSplash(BuildContext context) {
     return Center(
       key: const ValueKey('splash'),
       child: Column(
@@ -135,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                AppConstants.tagline,
+                context.tr('tagline'),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
               ),
@@ -146,7 +147,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildWelcome() {
+  Widget _buildWelcome(BuildContext context) {
     return Padding(
       key: const ValueKey('welcome'),
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -165,13 +166,13 @@ class _SplashScreenState extends State<SplashScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            AppConstants.tagline,
+            context.tr('tagline'),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 48),
           Text(
-            'WELCOME',
+            context.tr('welcome_shout'),
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -192,9 +193,9 @@ class _SplashScreenState extends State<SplashScreen>
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: const Text(
-                'LOG IN',
-                style: TextStyle(
+              child: Text(
+                context.tr('log_in_shout'),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
@@ -215,9 +216,9 @@ class _SplashScreenState extends State<SplashScreen>
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: const Text(
-                'SIGN UP',
-                style: TextStyle(
+              child: Text(
+                context.tr('sign_up_shout'),
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,

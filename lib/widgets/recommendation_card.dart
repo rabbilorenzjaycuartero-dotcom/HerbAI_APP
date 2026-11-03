@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/plant_model.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/rating_widget.dart';
 
@@ -67,11 +68,11 @@ class RecommendationCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildSection('May Help With:', plant.symptomsHelped),
+            _buildSection(context.tr('may_help_with'), plant.symptomsHelped),
             const SizedBox(height: 12),
             Row(
               children: [
-                _buildBadge('Availability', plant.availability.label,
+                _buildBadge(context.tr('availability'), plant.availability.label,
                     plant.availability.color),
                 const SizedBox(width: 12),
               ],
@@ -84,7 +85,7 @@ class RecommendationCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: CustomButton(
-                text: 'View Details',
+                text: context.tr('view_details'),
                 onPressed: onViewDetails,
               ),
             ),

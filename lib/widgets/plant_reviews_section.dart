@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/rating_service.dart';
 import 'rating_widget.dart';
 
@@ -45,9 +46,9 @@ class _PlantReviewsSectionState extends State<PlantReviewsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Reviews',
-          style: TextStyle(
+        Text(
+          context.tr('reviews'),
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -62,7 +63,7 @@ class _PlantReviewsSectionState extends State<PlantReviewsSection> {
           )
         else if (_reviews.isEmpty)
           Text(
-            'No reviews yet — be the first to review this plant!',
+            context.tr('no_reviews_yet'),
             style: TextStyle(color: AppTheme.textSecondary),
           )
         else

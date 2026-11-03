@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/local_auth_service.dart';
@@ -66,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLocked = true;
       _bannerIsLockout = true;
       _remainingLockoutSeconds = seconds;
-      _bannerMessage = 'Too many attempts. Try again in ${seconds}s.';
+      _bannerMessage = '${context.trRead('too_many_attempts_prefix')} ${seconds}s.';
     });
     _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -80,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _bannerMessage = null;
           timer.cancel();
         } else {
-          _bannerMessage = 'Too many attempts. Try again in ${_remainingLockoutSeconds}s.';
+          _bannerMessage = '${context.trRead('too_many_attempts_prefix')} ${_remainingLockoutSeconds}s.';
         }
       });
     });
@@ -107,10 +108,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return FirebaseAuthService.getErrorMessage(error);
     }
     final exists = await ApiService.checkEmailExists(lockoutEmail);
+    if (!mounted) return error.toString();
     if (exists == false) {
-      return 'Incorrect email.';
+      return context.trRead('incorrect_email');
     }
-    return 'Incorrect password.';
+    return context.trRead('incorrect_password');
   }
 
   @override
@@ -227,36 +229,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Welcome Back',
+                        context.tr('welcome_back'),
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to continue',
+                    context.tr('sign_in_to_continue'),
                     style: TextStyle(color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 36),
                   CustomTextField(
-                    hintText: 'Email',
+                    hintText: context.tr('email_hint'),
                     controller: _emailController,
                     enabled: !_isLocked,
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: const Icon(Icons.email_outlined),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
+                        return context.trRead('please_enter_email');
                       }
                       if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
-                        return 'Please enter a valid email';
+                        return context.trRead('please_enter_valid_email');
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   CustomTextField(
-                    hintText: 'Password',
+                    hintText: context.tr('password_hint'),
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     enabled: !_isLocked,
@@ -275,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return context.trRead('please_enter_password');
                       }
                       return null;
                     },
@@ -288,7 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         : (value) => setState(() => _rememberMe = value ?? false),
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Remember my email on this device'),
+                    title: Text(context.tr('remember_email_device')),
                   ),
                   if (_failedAttemptCount >= 2)
                     Align(
@@ -296,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: TextButton(
                         onPressed: () => context.push('/forgot-password'),
                         child: Text(
-                          'Forgot password?',
+                          context.tr('forgot_password_q'),
                           style: TextStyle(color: AppTheme.primary),
                         ),
                       ),
@@ -305,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: CustomButton(
-                          text: 'Sign In',
+                          text: context.tr('sign_in'),
                           onPressed: (_isLoading || _isLocked) ? null : _handleLogin,
                           isLoading: _isLoading,
                           borderRadius: 30,
@@ -317,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              "Don't have an account?",
+                              context.tr('no_account_q'),
                               style: TextStyle(color: AppTheme.textSecondary),
                             ),
                           ),
@@ -325,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextButton(
                             onPressed: () => context.go('/register'),
                             child: Text(
-                              'Sign up',
+                              context.tr('sign_up'),
                               style: TextStyle(
                                 color: AppTheme.primary,
                                 fontWeight: FontWeight.bold,

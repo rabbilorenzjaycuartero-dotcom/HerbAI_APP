@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../core/context_extensions.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../core/app_theme.dart';
@@ -12,22 +13,24 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Settings'),
+      appBar: CustomAppBar(title: context.tr('settings')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            _buildSectionTitle('Preferences'),
+            _buildSectionTitle(context.tr('preferences')),
             Consumer<ThemeProvider>(
               builder: (context, themeProvider, child) => _buildSwitchTile(
                 icon: Icons.dark_mode,
-                title: 'Dark Mode',
+                title: themeProvider.t('dark_mode'),
                 value: themeProvider.isDarkMode,
                 onChanged: (value) {
                   themeProvider.toggleDarkMode(value);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(value ? 'Dark mode enabled' : 'Dark mode disabled'),
+                      content: Text(value
+                          ? themeProvider.t('dark_mode_enabled')
+                          : themeProvider.t('dark_mode_disabled')),
                       duration: const Duration(seconds: 1),
                     ),
                   );
@@ -37,13 +40,15 @@ class SettingsScreen extends StatelessWidget {
             Consumer<ThemeProvider>(
               builder: (context, themeProvider, child) => _buildSwitchTile(
                 icon: Icons.notifications,
-                title: 'Notifications',
+                title: themeProvider.t('notifications'),
                 value: themeProvider.notificationsEnabled,
                 onChanged: (value) {
                   themeProvider.toggleNotifications(value);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(value ? 'Notifications enabled' : 'Notifications disabled'),
+                      content: Text(value
+                          ? themeProvider.t('notifications_enabled')
+                          : themeProvider.t('notifications_disabled')),
                       duration: const Duration(seconds: 1),
                     ),
                   );
@@ -52,24 +57,24 @@ class SettingsScreen extends StatelessWidget {
             ),
             _buildLanguageTile(context),
             const Divider(height: 32),
-            _buildSectionTitle('About'),
+            _buildSectionTitle(context.tr('about_section')),
             _buildMenuTile(
               icon: Icons.privacy_tip,
-              title: 'Privacy Policy',
+              title: context.tr('privacy_policy'),
               onTap: () {
                 context.push('/privacy');
               },
             ),
             _buildMenuTile(
               icon: Icons.description,
-              title: 'Terms & Conditions',
+              title: context.tr('terms_conditions'),
               onTap: () {
                 context.push('/terms');
               },
             ),
             _buildMenuTile(
               icon: Icons.info,
-              title: 'About HERBAI',
+              title: context.tr('about_herbai'),
               onTap: () {
                 context.push('/about');
               },
@@ -77,7 +82,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Consumer<ThemeProvider>(
               builder: (context, themeProvider, child) => CustomButton(
-                text: 'Reset Settings',
+                text: themeProvider.t('reset_settings'),
                 onPressed: () => _showResetDialog(context, themeProvider),
                 isOutlined: true,
               ),
@@ -143,7 +148,7 @@ class SettingsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8.0),
       child: ListTile(
         leading: const Icon(Icons.language, color: AppTheme.primary),
-        title: const Text('Language'),
+        title: Text(context.tr('language')),
         subtitle: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) => Text(
             themeProvider.selectedLanguage,
@@ -159,12 +164,18 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showLanguageDialog(BuildContext context) {
-    const languages = ['English', 'Filipino', 'Cebuano'];
+    // Language names are always shown in their own language/script (a
+    // "Filipino" entry doesn't get translated when viewing in English, the
+    // same way "Español" isn't translated in other apps' language pickers)
+    // -- Cebuano is left out of the picker for now since it has no
+    // translations behind it yet, same reason the Language setting needed
+    // fixing in the first place.
+    const languages = ['English', 'Filipino'];
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Select Language'),
+        title: Text(context.tr('select_language')),
         content: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) => SizedBox(
             width: double.maxFinite,
@@ -182,7 +193,7 @@ class SettingsScreen extends StatelessWidget {
                       themeProvider.setLanguage(value);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Language set to $value'),
+                          content: Text('${themeProvider.t('language_set_to')} $value'),
                           duration: const Duration(seconds: 1),
                         ),
                       );
@@ -202,13 +213,13 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Settings'),
-        content: const Text('Are you sure you want to reset all settings to default?'),
+        title: Text(themeProvider.t('reset_settings')),
+        content: Text(themeProvider.t('reset_settings_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              themeProvider.t('cancel'),
               style: TextStyle(color: AppTheme.textSecondary),
             ),
           ),
@@ -218,16 +229,16 @@ class SettingsScreen extends StatelessWidget {
               if (context.mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settings reset successfully'),
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: Text(themeProvider.t('settings_reset_success')),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
             },
-            child: const Text(
-              'Reset',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              themeProvider.t('reset'),
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],

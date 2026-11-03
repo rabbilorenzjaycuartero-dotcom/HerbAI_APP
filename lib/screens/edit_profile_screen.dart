@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
@@ -46,8 +47,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save your changes. Please try again.'),
+        SnackBar(
+          content: Text(context.trRead('could_not_save_changes')),
           backgroundColor: Colors.red,
         ),
       );
@@ -58,7 +59,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: const CustomAppBar(title: 'Edit Profile'),
+      appBar: CustomAppBar(title: context.tr('edit_profile')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -72,7 +73,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 32),
               CustomTextField(
-                hintText: 'Display Name',
+                hintText: context.tr('display_name_hint'),
                 controller: _nameController,
                 prefixIcon: const Icon(Icons.person_outlined),
                 enabled: !_isSaving,
@@ -81,7 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(
                 width: double.infinity,
                 child: CustomButton(
-                  text: 'Save Changes',
+                  text: context.tr('save_changes'),
                   onPressed: _isSaving ? null : _handleSave,
                   isLoading: _isSaving,
                   borderRadius: 30,

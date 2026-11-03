@@ -4,6 +4,7 @@ import '../screens/recommendation_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/profile_screen.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 import '../widgets/educational_disclaimer_dialog.dart';
 
 class MainDashboard extends StatefulWidget {
@@ -51,26 +52,26 @@ class _MainDashboardState extends State<MainDashboard> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: AppTheme.textSecondary,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: context.tr('nav_home'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.recommend_outlined),
-            activeIcon: Icon(Icons.recommend),
-            label: 'Recommendations',
+            icon: const Icon(Icons.recommend_outlined),
+            activeIcon: const Icon(Icons.recommend),
+            label: context.tr('nav_recommendations'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Favorites',
+            icon: const Icon(Icons.favorite_border),
+            activeIcon: const Icon(Icons.favorite),
+            label: context.tr('favorites'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outlined),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outlined),
+            activeIcon: const Icon(Icons.person),
+            label: context.tr('profile'),
           ),
         ],
       ),

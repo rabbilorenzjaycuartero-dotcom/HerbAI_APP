@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../core/app_theme.dart';
+import '../core/context_extensions.dart';
 
 /// Full-screen in-app view of a herb's source page, so "View source" stays
 /// inside HERBAI instead of switching to an external browser.
@@ -51,7 +52,7 @@ class _SourceWebviewScreenState extends State<SourceWebviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Source'),
+        title: Text(context.tr('source')),
         backgroundColor: AppTheme.background,
         foregroundColor: Colors.black,
         elevation: 0,
