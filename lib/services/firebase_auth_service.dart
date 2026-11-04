@@ -96,7 +96,21 @@ class FirebaseAuthService {
       return null;
     }
 
-    await user.reload();
+    try {
+      await user.reload();
+    } catch (error, stackTrace) {
+      // reload() is a real network call, and callers use this method as
+      // best-effort housekeeping right after a genuine success (sign-in,
+      // email verification) -- a transient failure here doesn't mean the
+      // user is signed out, so fall back to the already-authenticated user
+      // instead of throwing and having a caller mistake this for an auth
+      // failure (e.g. the login screen recording a false lockout attempt).
+      debugPrint('refreshCurrentUser: reload() failed, keeping cached user: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      _currentUser = AuthUser.fromFirebaseUser(user);
+      return _currentUser;
+    }
+
     final refreshedUser = _auth.currentUser;
     _currentUser = refreshedUser == null
         ? null

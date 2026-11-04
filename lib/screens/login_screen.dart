@@ -151,22 +151,6 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
       );
-
-      await ApiService.recordLoginSuccess(lockoutEmail);
-
-      debugPrint('Login successful, saving remember me preference');
-      await LocalAuthService.saveRememberMe(
-        _rememberMe,
-        email,
-      );
-
-      final refreshedUser = await FirebaseAuthService.refreshCurrentUser();
-      debugPrint('User refreshed: ${refreshedUser?.email}, verified: ${refreshedUser?.emailVerified}');
-
-      if (!mounted) return;
-
-      // Route guard will handle navigation based on email verification status
-      context.go('/');
     } on Exception catch (e) {
       debugPrint('Login failed with exception: $e');
       final failureResult = await ApiService.recordLoginFailure(lockoutEmail);
@@ -185,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _bannerMessage = message;
         });
       }
+      return;
     } catch (e, stackTrace) {
       debugPrint('Login failed with unexpected error: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -194,7 +179,31 @@ class _LoginScreenState extends State<LoginScreen> {
         _bannerIsLockout = false;
         _bannerMessage = e.toString();
       });
+      return;
     }
+
+    // The credentials were genuinely correct at this point -- Firebase has
+    // already authenticated the user, so nothing from here on should be
+    // able to get recorded as a failed attempt / count toward lockout.
+    // Each of these is best-effort housekeeping around an already-successful
+    // login, not part of the actual auth check.
+    try {
+      await ApiService.recordLoginSuccess(lockoutEmail);
+
+      debugPrint('Login successful, saving remember me preference');
+      await LocalAuthService.saveRememberMe(_rememberMe, email);
+
+      final refreshedUser = await FirebaseAuthService.refreshCurrentUser();
+      debugPrint('User refreshed: ${refreshedUser?.email}, verified: ${refreshedUser?.emailVerified}');
+    } catch (e, stackTrace) {
+      debugPrint('Post-login housekeeping failed (non-fatal, user is still signed in): $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    if (!mounted) return;
+
+    // Route guard will handle navigation based on email verification status
+    context.go('/');
   }
 
   @override

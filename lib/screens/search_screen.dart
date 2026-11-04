@@ -30,7 +30,12 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  void _handleSearch(String query, PlantProvider provider) {
+  // Live-filters results as the user types -- no recent-search recording
+  // here, since every keystroke firing this (via onChanged) would otherwise
+  // record "l", "li", "lil", "lily" as four separate "recent searches" for
+  // one search, and inflate the Profile screen's lifetime search count by
+  // keystrokes typed rather than searches actually performed.
+  void _updateSearchResults(String query, PlantProvider provider) {
     if (query.isEmpty) {
       setState(() {
         _isSearching = false;
@@ -43,7 +48,12 @@ class _SearchScreenState extends State<SearchScreen> {
       _isSearching = true;
       _searchResults = provider.searchPlants(query);
     });
+  }
 
+  // Called on submit (Enter / search action) -- a finished search, worth
+  // recording to Recent Searches and the lifetime search count.
+  void _handleSearch(String query, PlantProvider provider) {
+    _updateSearchResults(query, provider);
     if (_searchResults.isNotEmpty) {
       provider.addSearch(query);
     }
@@ -66,7 +76,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     padding: const EdgeInsets.all(16.0),
                     child: CustomSearchBar(
                       controller: _searchController,
-                      onChanged: (query) => _handleSearch(query, plantProvider),
+                      onChanged: (query) => _updateSearchResults(query, plantProvider),
                       onSubmitted: (query) => _handleSearch(query, plantProvider),
                     ),
                   ),
