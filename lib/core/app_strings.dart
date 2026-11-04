@@ -39,7 +39,6 @@ class AppStrings {
       'English': 'Discover the power of herbal medicine',
       'Filipino': 'Tuklasin ang kapangyarihan ng halamang gamot',
     },
-    'search_herbal_plants_hint': {'English': 'Search herbal plants...', 'Filipino': 'Maghanap ng halamang gamot...'},
     'featured_plants': {'English': 'Featured Plants', 'Filipino': 'Mga Itinatampok na Halaman'},
     'no_plants_yet': {'English': 'No plants yet', 'Filipino': 'Wala pang halaman'},
     'your_recommendations': {'English': 'Your Recommendations', 'Filipino': 'Iyong mga Rekomendasyon'},

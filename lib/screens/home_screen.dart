@@ -5,7 +5,6 @@ import '../providers/plant_provider.dart';
 import '../providers/symptom_provider.dart';
 import '../widgets/plant_card.dart';
 import '../widgets/loading_widget.dart';
-import '../widgets/custom_search_bar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/decorative_blobs.dart';
 import '../core/app_theme.dart';
@@ -56,11 +55,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  CustomSearchBar(
-                    hintText: context.tr('search_herbal_plants_hint'),
-                    onTap: () => context.push('/search'),
-                  ),
-                  const SizedBox(height: 24),
 
                   // Primary Action Card - Start AI Recommendation
                   _buildPrimaryActionCard(context),
