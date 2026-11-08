@@ -6,6 +6,7 @@ import '../providers/plant_provider.dart';
 import '../core/app_theme.dart';
 import '../core/context_extensions.dart';
 import '../widgets/custom_appbar.dart';
+import '../widgets/doh_approved_badge.dart';
 import '../widgets/plant_rating_section.dart';
 import '../widgets/plant_reviews_section.dart';
 import '../widgets/source_webview_screen.dart';
@@ -153,12 +154,23 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          plant.name,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                plant.name,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (plant.isDohRecognized) ...[
+              const SizedBox(width: 8),
+              const DohApprovedBadge(size: 22),
+            ],
+          ],
         ),
         const SizedBox(height: 4),
         Text(

@@ -3,6 +3,7 @@ import '../models/plant_model.dart';
 import '../core/app_theme.dart';
 import '../core/context_extensions.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/doh_approved_badge.dart';
 import '../widgets/rating_widget.dart';
 
 class RecommendationCard extends StatelessWidget {
@@ -37,12 +38,23 @@ class RecommendationCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '🌿 ${plant.name}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '🌿 ${plant.name}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (plant.isDohRecognized) ...[
+                            const SizedBox(width: 6),
+                            const DohApprovedBadge(),
+                          ],
+                        ],
                       ),
                       Text(
                         plant.scientificName,
