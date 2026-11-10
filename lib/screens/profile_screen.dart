@@ -146,9 +146,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildStatItem(context.tr('favorites'), plantProvider.favorites.length),
-        _buildStatItem(context.tr('reviews'), _reviewCount),
-        _buildStatItem(context.tr('searches'), _searchCount),
+        Expanded(child: _buildStatItem(context.tr('favorites'), plantProvider.favorites.length)),
+        Expanded(child: _buildStatItem(context.tr('reviews'), _reviewCount)),
+        Expanded(child: _buildStatItem(context.tr('searches'), _searchCount)),
       ],
     );
   }

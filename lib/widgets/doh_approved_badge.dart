@@ -12,14 +12,29 @@ class DohApprovedBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'DOH Clinically Approved',
-      child: Container(
-        width: size,
-        height: size,
-        decoration: const BoxDecoration(
-          color: Colors.green,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.check_rounded, size: size * 0.7, color: Colors.white),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_rounded, size: size * 0.7, color: Colors.white),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '(Clinically Approved)',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.green.shade700,
+            ),
+          ),
+        ],
       ),
     );
   }

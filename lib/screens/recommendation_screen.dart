@@ -252,8 +252,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
         return context.tr('sort_best_match');
       case SortOption.highestRated:
         return context.tr('sort_highest_rated');
-      case SortOption.alphabetical:
-        return context.tr('sort_alphabetical');
+      case SortOption.clinicallyApproved:
+        return context.tr('sort_clinically_approved');
     }
   }
 

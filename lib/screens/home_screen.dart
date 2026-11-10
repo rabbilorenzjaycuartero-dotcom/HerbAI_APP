@@ -22,7 +22,7 @@ class HomeScreen extends StatelessWidget {
       return const Scaffold(body: LoadingWidget());
     }
 
-    final featuredPlants = plantProvider.plants.take(5).toList();
+    final featuredPlants = plantProvider.getFeaturedPlants().take(5).toList();
     final recommendedPlants = symptomProvider.getRecommendedPlants().take(3).toList();
     final hasRecommendations = recommendedPlants.isNotEmpty;
 
@@ -117,9 +117,7 @@ class HomeScreen extends StatelessWidget {
 
                   // Recent Searches / Recommendations
                   Text(
-                    hasRecommendations
-                        ? context.tr('your_recommendations')
-                        : context.tr('recently_viewed'),
+                    context.tr('your_recommendations'),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

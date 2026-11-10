@@ -86,13 +86,6 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                 children: [
                   _buildPlantHeader(),
                   const SizedBox(height: 8),
-                  PlantRatingSection(
-                    plantId: plant.id,
-                    onReviewPosted: () {
-                      setState(() => _reviewsRefreshToken++);
-                    },
-                  ),
-                  const SizedBox(height: 24),
                   _buildDescription(context),
                   const SizedBox(height: 24),
                   _buildSection(context.tr('medicinal_uses'), plant.medicinalUses, Icons.healing),
@@ -106,6 +99,13 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
                   _buildSafetyWarnings(context),
                   const SizedBox(height: 24),
                   _buildEthnobotanicalInfo(context),
+                  const SizedBox(height: 24),
+                  PlantRatingSection(
+                    plantId: plant.id,
+                    onReviewPosted: () {
+                      setState(() => _reviewsRefreshToken++);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   PlantReviewsSection(
                     key: ValueKey(_reviewsRefreshToken),
@@ -154,23 +154,12 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                plant.name,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (plant.isDohRecognized) ...[
-              const SizedBox(width: 8),
-              const DohApprovedBadge(size: 22),
-            ],
-          ],
+        Text(
+          plant.name,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -181,6 +170,10 @@ class _PlantDetailsScreenState extends State<PlantDetailsScreen> {
             fontStyle: FontStyle.italic,
           ),
         ),
+        if (plant.isDohRecognized) ...[
+          const SizedBox(height: 6),
+          const DohApprovedBadge(size: 22),
+        ],
       ],
     );
   }

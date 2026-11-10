@@ -46,6 +46,7 @@ class HealthCheckScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
                         _buildConditionOptions(context),
+                        _buildNoneSelectedHint(context),
                       ],
                     ),
                   ),
@@ -79,6 +80,36 @@ class HealthCheckScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildNoneSelectedHint(BuildContext context) {
+    return Consumer<SymptomProvider>(
+      builder: (context, provider, child) {
+        if (provider.selectedConditions.isNotEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, size: 16, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  context.tr('no_conditions_hint'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildBottomButton(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -97,6 +128,8 @@ class HealthCheckScreen extends StatelessWidget {
           text: context.tr('continue_label'),
           onPressed: () => context.push('/recommendations'),
           borderRadius: 30,
+          icon: Icons.arrow_forward_rounded,
+          elevation: 6,
         ),
       ),
     );

@@ -9,6 +9,8 @@ class CustomButton extends StatelessWidget {
   final Color? color;
   final double? fontSize;
   final double? borderRadius;
+  final IconData? icon;
+  final double? elevation;
 
   const CustomButton({
     super.key,
@@ -19,7 +21,29 @@ class CustomButton extends StatelessWidget {
     this.color,
     this.fontSize,
     this.borderRadius,
+    this.icon,
+    this.elevation,
   });
+
+  Widget _buildLabel() {
+    final label = Text(
+      text,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: fontSize ?? 16,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    if (icon == null) return label;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        label,
+        const SizedBox(width: 8),
+        Icon(icon, size: (fontSize ?? 16) + 4),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,19 +65,17 @@ class CustomButton extends StatelessWidget {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: fontSize ?? 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                : _buildLabel(),
           )
         : ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: color ?? AppTheme.primary,
               foregroundColor: Colors.white,
+              elevation: elevation,
+              shadowColor: elevation != null
+                  ? (color ?? AppTheme.primary).withValues(alpha: 0.4)
+                  : null,
               shape: borderRadius != null
                   ? RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(borderRadius!),
@@ -69,13 +91,7 @@ class CustomButton extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: fontSize ?? 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                : _buildLabel(),
           );
   }
 }

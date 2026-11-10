@@ -123,7 +123,7 @@ class PlantProvider with ChangeNotifier {
   }
 
   List<Plant> getFeaturedPlants() {
-    return List<Plant>.from(_plants.take(3));
+    return _plants.where((plant) => plant.isDohRecognized).toList();
   }
 
   List<Plant> getPopularPlants() {

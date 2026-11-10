@@ -32,6 +32,7 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: context.tr('select_your_symptoms'),
+        onBackPressed: () => context.go('/'),
       ),
       body: Stack(
         children: [

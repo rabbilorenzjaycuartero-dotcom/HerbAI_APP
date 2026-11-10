@@ -42,7 +42,6 @@ class AppStrings {
     'featured_plants': {'English': 'Featured Plants', 'Filipino': 'Mga Itinatampok na Halaman'},
     'no_plants_yet': {'English': 'No plants yet', 'Filipino': 'Wala pang halaman'},
     'your_recommendations': {'English': 'Your Recommendations', 'Filipino': 'Iyong mga Rekomendasyon'},
-    'recently_viewed': {'English': 'Recently Viewed', 'Filipino': 'Kamakailang Tiningnan'},
     'no_recommendations_yet': {'English': 'No recommendations yet', 'Filipino': 'Wala pang rekomendasyon'},
     'start_now': {'English': 'Start Now', 'Filipino': 'Magsimula Na'},
     'describe_your_symptoms': {'English': 'Describe Your Symptoms', 'Filipino': 'Ilarawan ang Iyong mga Sintomas'},
@@ -106,8 +105,8 @@ class AppStrings {
     },
     'checking_email': {'English': 'Checking email...', 'Filipino': 'Chine-check ang email...'},
     'password_min_length': {
-      'English': 'Password must be at least 8 characters',
-      'Filipino': 'Dapat hindi bababa sa 8 karakter ang password',
+      'English': 'Password must be at least 12 characters',
+      'Filipino': 'Dapat hindi bababa sa 12 karakter ang password',
     },
     'password_needs_uppercase': {
       'English': 'Password must contain an uppercase letter',
@@ -125,7 +124,7 @@ class AppStrings {
       'English': 'Password must contain a special character',
       'Filipino': 'Dapat may espesyal na karakter ang password',
     },
-    'req_8_characters': {'English': '8+ characters', 'Filipino': '8+ na karakter'},
+    'req_12_characters': {'English': '12+ characters', 'Filipino': '12+ na karakter'},
     'req_uppercase': {'English': 'Uppercase letter', 'Filipino': 'Malaking titik'},
     'req_lowercase': {'English': 'Lowercase letter', 'Filipino': 'Maliit na titik'},
     'req_number': {'English': 'Number', 'Filipino': 'Numero'},
@@ -369,6 +368,10 @@ class AppStrings {
       'Filipino': 'May ilang halamang gamot na may karagdagang babala para dito. '
           'Piliin ang anumang nalalapat para ma-flag namin ito para sa iyo.',
     },
+    'no_conditions_hint': {
+      'English': "None of these apply? You can tap Continue.",
+      'Filipino': 'Walang nalalapat sa iyo? Pwede ka nang mag-tap ng Continue.',
+    },
     // Keyed by Symptom.id from AppConstants.healthConditions, not by name,
     // since that list's `name` field itself can't be a translated getter
     // while staying a const list.
@@ -392,7 +395,7 @@ class AppStrings {
     'sort_by': {'English': 'Sort By:', 'Filipino': 'Ayusin Ayon sa:'},
     'sort_best_match': {'English': 'Best Match', 'Filipino': 'Pinakaangkop'},
     'sort_highest_rated': {'English': 'Highest Rated', 'Filipino': 'Pinakamataas ang Rating'},
-    'sort_alphabetical': {'English': 'Alphabetical', 'Filipino': 'Alpabetikal'},
+    'sort_clinically_approved': {'English': 'Clinically Approved', 'Filipino': 'Klinikal na Aprubado'},
     'no_plants_for_symptoms': {
       'English': 'No herbal plants were found for the selected symptoms.',
       'Filipino': 'Walang nahanap na halamang gamot para sa mga napiling sintomas.',
@@ -434,7 +437,8 @@ class AppStrings {
 
     // Main dashboard (bottom nav)
     'nav_home': {'English': 'Home', 'Filipino': 'Home'},
-    'nav_recommendations': {'English': 'Recommendations', 'Filipino': 'Mga Rekomendasyon'},
+    'nav_recommendations': {'English': 'Recommend', 'Filipino': 'Rekomenda'},
+    'nav_favorites': {'English': 'Favorites', 'Filipino': 'Paborito'},
 
     // Plant details screen
     'medicinal_uses': {'English': 'Medicinal Uses', 'Filipino': 'Mga Paggamit Medisinal'},

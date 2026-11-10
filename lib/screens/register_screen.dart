@@ -241,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (value == null || value.isEmpty) {
                       return context.trRead('please_enter_password');
                     }
-                    if (value.length < 8) {
+                    if (value.length < 12) {
                       return context.trRead('password_min_length');
                     }
                     if (!RegExp(r'[A-Z]').hasMatch(value)) {
@@ -262,8 +262,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 _buildRequirementRow(
-                  context.tr('req_8_characters'),
-                  _passwordController.text.length >= 8,
+                  context.tr('req_12_characters'),
+                  _passwordController.text.length >= 12,
                 ),
                 _buildRequirementRow(
                   context.tr('req_uppercase'),

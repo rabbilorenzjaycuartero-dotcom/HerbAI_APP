@@ -5,7 +5,7 @@ import '../services/api_service.dart';
 enum SortOption {
   bestMatch,
   highestRated,
-  alphabetical,
+  clinicallyApproved,
 }
 
 class SymptomProvider with ChangeNotifier {
@@ -168,8 +168,9 @@ class SymptomProvider with ChangeNotifier {
       case SortOption.highestRated:
         plants.sort((a, b) => b.rating.compareTo(a.rating));
         break;
-      case SortOption.alphabetical:
-        plants.sort((a, b) => a.name.compareTo(b.name));
+      case SortOption.clinicallyApproved:
+        plants.sort((a, b) =>
+            (b.isDohRecognized ? 1 : 0).compareTo(a.isDohRecognized ? 1 : 0));
         break;
     }
 

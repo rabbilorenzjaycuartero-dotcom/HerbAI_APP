@@ -13,6 +13,7 @@ class EducationalDisclaimerDialog extends StatelessWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black,
       builder: (context) => const EducationalDisclaimerDialog(),
     );
   }

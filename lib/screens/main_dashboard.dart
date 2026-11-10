@@ -52,6 +52,8 @@ class _MainDashboardState extends State<MainDashboard> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.primary,
         unselectedItemColor: AppTheme.textSecondary,
+        selectedFontSize: 10,
+        unselectedFontSize: 10,
         items: [
           BottomNavigationBarItem(
             icon: const Icon(Icons.home_outlined),
@@ -66,7 +68,7 @@ class _MainDashboardState extends State<MainDashboard> {
           BottomNavigationBarItem(
             icon: const Icon(Icons.favorite_border),
             activeIcon: const Icon(Icons.favorite),
-            label: context.tr('favorites'),
+            label: context.tr('nav_favorites'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.person_outlined),

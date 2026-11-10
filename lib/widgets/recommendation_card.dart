@@ -38,23 +38,12 @@ class RecommendationCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              '🌿 ${plant.name}',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          if (plant.isDohRecognized) ...[
-                            const SizedBox(width: 6),
-                            const DohApprovedBadge(),
-                          ],
-                        ],
+                      Text(
+                        '🌿 ${plant.name}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         plant.scientificName,
@@ -64,6 +53,10 @@ class RecommendationCard extends StatelessWidget {
                           fontStyle: FontStyle.italic,
                         ),
                       ),
+                      if (plant.isDohRecognized) ...[
+                        const SizedBox(height: 4),
+                        const DohApprovedBadge(),
+                      ],
                       const SizedBox(height: 8),
                       RatingWidget(rating: plant.rating),
                       const SizedBox(height: 4),

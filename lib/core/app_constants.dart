@@ -22,7 +22,7 @@ class AppConstants {
   //     URL currently printed by `cloudflared tunnel --url http://localhost:5000`
   //     -- note this URL changes every time that tunnel process is restarted,
   //     since it's the free account-less "quick tunnel" (no custom domain yet).
-  static const String apiBaseUrl = 'https://mainland-allowed-evans-evident.trycloudflare.com';
+  static const String apiBaseUrl = 'https://mercury-dow-angel-feat.trycloudflare.com';
 
   static const List<String> categories = [
     'Cough',
