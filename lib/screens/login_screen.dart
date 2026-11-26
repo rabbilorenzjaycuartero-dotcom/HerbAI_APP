@@ -9,6 +9,7 @@ import '../services/local_auth_service.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/decorative_blobs.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -225,17 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
-                      Center(
-                        child: Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(Icons.eco, size: 44, color: Colors.white),
-                        ),
-                      ),
+                      const Center(child: AppLogo(size: 96)),
                       const SizedBox(height: 24),
                       Text(
                         context.tr('welcome_back'),

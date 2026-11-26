@@ -6,6 +6,7 @@ import '../providers/theme_provider.dart';
 import '../widgets/custom_appbar.dart';
 import '../core/app_theme.dart';
 import '../widgets/custom_button.dart';
+import '../providers/user_profile_store.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -56,6 +57,25 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             _buildLanguageTile(context),
+            // Usage reports for the admin account only (panel revision).
+            ListenableBuilder(
+              listenable: userProfileStore,
+              builder: (context, _) {
+                if (!userProfileStore.isAdmin) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(height: 32),
+                    _buildSectionTitle(context.tr('admin_section')),
+                    _buildMenuTile(
+                      icon: Icons.bar_chart_rounded,
+                      title: context.tr('reports_title'),
+                      onTap: () => context.push('/admin/reports'),
+                    ),
+                  ],
+                );
+              },
+            ),
             const Divider(height: 32),
             _buildSectionTitle(context.tr('about_section')),
             _buildMenuTile(

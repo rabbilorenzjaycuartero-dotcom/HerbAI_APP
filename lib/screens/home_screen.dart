@@ -59,7 +59,7 @@ class HomeScreen extends StatelessWidget {
                   // Primary Action Card - Start AI Recommendation
                   _buildPrimaryActionCard(context),
                   const SizedBox(height: 12),
-                  _buildDescribeSymptomsCard(context),
+                  _buildSelectSymptomsCard(context),
                   const SizedBox(height: 24),
 
                   // Featured Plants
@@ -146,7 +146,7 @@ class HomeScreen extends StatelessWidget {
                                 child: CustomButton(
                                   text: context.tr('start_now'),
                                   onPressed: () {
-                                    context.push('/symptoms');
+                                    context.push('/chat');
                                   },
                                   borderRadius: 30,
                                 ),
@@ -182,7 +182,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDescribeSymptomsCard(BuildContext context) {
+  Widget _buildSelectSymptomsCard(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -191,7 +191,7 @@ class HomeScreen extends StatelessWidget {
         border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
       ),
       child: InkWell(
-        onTap: () => context.push('/describe'),
+        onTap: () => context.push('/symptoms'),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -205,7 +205,7 @@ class HomeScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
-                  Icons.edit_note_rounded,
+                  Icons.checklist_rounded,
                   size: 30,
                   color: AppTheme.primary,
                 ),
@@ -216,7 +216,7 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.tr('describe_your_symptoms'),
+                      context.tr('select_your_symptoms'),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -224,7 +224,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      context.tr('type_how_you_feel'),
+                      context.tr('select_symptoms_card_subtitle'),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppTheme.textSecondary,
@@ -323,7 +323,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          context.push('/symptoms');
+          context.push('/chat');
         },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
@@ -341,8 +341,8 @@ class HomeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
-                      Icons.eco,
-                      size: 32,
+                      Icons.chat_bubble_outline_rounded,
+                      size: 30,
                       color: Colors.white,
                     ),
                   ),
@@ -384,7 +384,7 @@ class HomeScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.search, color: AppTheme.primary, size: 20),
+                    Icon(Icons.chat_rounded, color: AppTheme.primary, size: 20),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(

@@ -55,6 +55,10 @@ class _RatePlantModalState extends State<RatePlantModal> {
   late double _pendingRating = widget.initialRating;
   bool _isSubmitting = false;
 
+  // Shown inside the sheet. A SnackBar would render behind this modal
+  // bottom sheet, so the user never saw it (test case TC_UI_36).
+  String? _error;
+
   @override
   void dispose() {
     _commentController.dispose();
@@ -64,19 +68,18 @@ class _RatePlantModalState extends State<RatePlantModal> {
   Future<void> _postReview() async {
     final user = FirebaseAuthService.currentUser;
     if (user?.uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.trRead('sign_in_to_rate'))),
-      );
+      setState(() => _error = context.trRead('sign_in_to_rate'));
       return;
     }
     if (_pendingRating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.trRead('tap_star_first'))),
-      );
+      setState(() => _error = context.trRead('tap_star_first'));
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
     try {
       await RatingService.submitRating(
         plantId: widget.plantId,
@@ -93,10 +96,10 @@ class _RatePlantModalState extends State<RatePlantModal> {
     } catch (e) {
       debugPrint('Failed to submit rating: $e');
       if (!mounted) return;
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.trRead('could_not_save_rating'))),
-      );
+      setState(() {
+        _isSubmitting = false;
+        _error = context.trRead('could_not_save_rating');
+      });
     }
   }
 
@@ -135,9 +138,22 @@ class _RatePlantModalState extends State<RatePlantModal> {
               starSize: 36,
               onRatingSelected: _isSubmitting
                   ? null
-                  : (stars) => setState(() => _pendingRating = stars.toDouble()),
+                  : (stars) => setState(() {
+                        _pendingRating = stars.toDouble();
+                        _error = null;
+                      }),
             ),
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           TextField(
             controller: _commentController,

@@ -3,6 +3,7 @@ import '../widgets/custom_appbar.dart';
 import '../core/app_theme.dart';
 import '../core/app_constants.dart';
 import '../core/context_extensions.dart';
+import '../widgets/app_logo.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -17,19 +18,7 @@ class AboutScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(32.0),
-                ),
-                child: const Icon(
-                  Icons.eco,
-                  size: 72,
-                  color: Colors.white,
-                ),
-              ),
+              const AppLogo(size: 120),
               const SizedBox(height: 16),
               Text(
                 AppConstants.appName,
@@ -60,6 +49,12 @@ class AboutScreen extends StatelessWidget {
                 context,
                 context.tr('app_description_label'),
                 context.tr('app_description_value'),
+              ),
+              const SizedBox(height: 24),
+              _buildSection(
+                context,
+                context.tr('key_features_label'),
+                context.tr('key_features_value'),
               ),
               const SizedBox(height: 24),
               _buildSection(

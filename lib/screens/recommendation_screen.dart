@@ -167,18 +167,10 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
       action: CustomButton(
         text: context.tr('choose_different_symptoms'),
         onPressed: () {
-          // A single context.pop() only lands back on Health Check (the
-          // screen pushed just before this one, for both the /symptoms and
-          // /describe entry points) -- not actually "choosing different
-          // symptoms" as promised. go('/symptoms') takes the user straight
-          // to the symptom picker and clears the now-stale recommendation
-          // off the stack, regardless of which entry point they came from.
-          // This empty state only shows up when the current selection
-          // produced zero results, so clear it too -- otherwise the user
-          // would land back on the picker with that same losing combination
-          // still checked.
+          // Back to the chatbot (the only symptom flow since the panel
+          // revision) with this losing selection cleared.
           Provider.of<SymptomProvider>(context, listen: false).clearSymptoms();
-          context.go('/symptoms');
+          context.go('/chat');
         },
       ),
     );

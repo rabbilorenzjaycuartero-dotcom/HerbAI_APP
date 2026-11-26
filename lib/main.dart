@@ -8,6 +8,7 @@ import 'app/app_routes.dart';
 import 'providers/plant_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/symptom_provider.dart';
+import 'providers/chat_provider.dart';
 import 'services/firebase_auth_service.dart';
 import 'services/notification_service.dart';
 
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PlantProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => SymptomProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

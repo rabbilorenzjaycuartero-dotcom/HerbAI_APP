@@ -5,6 +5,7 @@ import '../core/app_constants.dart';
 import '../core/app_theme.dart';
 import '../core/context_extensions.dart';
 import '../services/firebase_auth_service.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/decorative_blobs.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -96,16 +97,8 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildLogo({double size = 120, double iconSize = 72}) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: AppTheme.primary,
-        borderRadius: BorderRadius.circular(size * 0.27),
-      ),
-      child: Icon(Icons.eco, size: iconSize, color: Colors.white),
-    );
+  Widget _buildLogo({double size = 120}) {
+    return AppLogo(size: size);
   }
 
   Widget _buildSplash(BuildContext context) {
@@ -154,7 +147,7 @@ class _SplashScreenState extends State<SplashScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildLogo(size: 110, iconSize: 60),
+          _buildLogo(size: 110),
           const SizedBox(height: 16),
           const Text(
             AppConstants.appName,

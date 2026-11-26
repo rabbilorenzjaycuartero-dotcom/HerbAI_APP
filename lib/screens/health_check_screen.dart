@@ -5,6 +5,8 @@ import '../core/app_constants.dart';
 import '../core/app_theme.dart';
 import '../core/context_extensions.dart';
 import '../providers/symptom_provider.dart';
+import '../services/api_service.dart';
+import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/decorative_blobs.dart';
@@ -126,7 +128,10 @@ class HealthCheckScreen extends StatelessWidget {
       child: SafeArea(
         child: CustomButton(
           text: context.tr('continue_label'),
-          onPressed: () => context.push('/recommendations'),
+          onPressed: () {
+            _logChecklistSearch(context.read<SymptomProvider>());
+            context.push('/recommendations');
+          },
           borderRadius: 30,
           icon: Icons.arrow_forward_rounded,
           elevation: 6,
@@ -192,4 +197,15 @@ class _ConditionChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Logs this checklist search for the admin usage reports (most common
+/// concerns). Runs in the background; navigation never waits for it.
+Future<void> _logChecklistSearch(SymptomProvider provider) async {
+  final symptoms = provider.selectedSymptoms.map((s) => s.id).toList();
+  if (symptoms.isEmpty) return;
+  final conditions = provider.selectedConditions.toList();
+  final token = await FirebaseAuthService.getIdToken();
+  if (token == null) return;
+  await ApiService.logChecklistSearch(idToken: token, symptoms: symptoms, conditions: conditions);
 }

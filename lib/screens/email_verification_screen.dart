@@ -11,7 +11,8 @@ class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
 
   @override
-  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
@@ -82,9 +83,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     }
 
     setState(() => _isVerifying = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error), backgroundColor: Colors.red),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
   }
 
   @override
@@ -92,7 +93,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     return Scaffold(
       appBar: const CustomAppBar(),
       body: SafeArea(
-        child: Padding(
+        // Scrollable so the keyboard can't push the buttons into a bottom
+        // overflow on shorter screens.
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,7 +127,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 8,
+                ),
                 decoration: const InputDecoration(
                   counterText: '',
                   hintText: '------',
@@ -132,12 +139,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               const SizedBox(height: 16),
               CustomButton(
-                text: _isVerifying ? context.tr('verifying') : context.tr('verify'),
+                text: _isVerifying
+                    ? context.tr('verifying')
+                    : context.tr('verify'),
                 onPressed: _isVerifying ? null : _verifyCode,
               ),
               const SizedBox(height: 12),
               CustomButton(
-                text: _isSending ? context.tr('sending') : context.tr('resend_code'),
+                text: _isSending
+                    ? context.tr('sending')
+                    : context.tr('resend_code'),
                 onPressed: _isSending ? null : () => _sendCode(),
                 isOutlined: true,
               ),

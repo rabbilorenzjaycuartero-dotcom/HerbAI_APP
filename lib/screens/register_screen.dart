@@ -7,7 +7,11 @@ import '../services/firebase_auth_service.dart';
 import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
+import '../widgets/app_logo.dart';
+import '../utils/name_input.dart';
 import '../widgets/decorative_blobs.dart';
+import '../widgets/demographics_fields.dart';
+import '../providers/user_profile_store.dart';
 
 final RegExp _emailFormatPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
@@ -27,6 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _demographics = DemographicsController();
   final _emailFocusNode = FocusNode();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -48,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _demographics.dispose();
     super.dispose();
   }
 
@@ -77,11 +83,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _isLoading = true);
-    final name = _nameController.text.trim();
+    final name = normalizeName(_nameController.text);
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     debugPrint('Register attempt started for $email');
+
+    // Captured before the await: as soon as Firebase signs the new user in,
+    // the router redirects to /verify-email and disposes this screen, so
+    // `context` is no longer usable by the time registration returns. The
+    // app-level messenger survives the route change and shows the message
+    // on the Verify screen.
+    final messenger = ScaffoldMessenger.of(context);
+    final createdMessage = context.trRead('account_created_verify');
 
     try {
       final user = await FirebaseAuthService.registerWithEmailAndPassword(
@@ -92,13 +106,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       debugPrint('Register successful for $email, user: ${user.email}, verified: ${user.emailVerified}');
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      // Age/designation for the admin usage reports (panel revision). If
+      // this write fails, the Complete Profile screen asks again later.
+      try {
+        await userProfileStore.save(
+          name: name,
+          email: email,
+          age: _demographics.ageValue!,
+          designation: _demographics.designation!,
+          designationOther: _demographics.otherValue,
+        );
+      } catch (e) {
+        debugPrint('Saving profile after registration failed: $e');
+      }
+
+      messenger.showSnackBar(
         SnackBar(
-          content: Text(context.trRead('account_created_verify')),
+          content: Text(createdMessage),
           backgroundColor: AppTheme.primary,
         ),
       );
+      if (!mounted) return;
       context.go('/verify-email');
     } on Exception catch (e) {
       debugPrint('Register failed with exception: $e');
@@ -141,17 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-                    Center(
-                      child: Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Icon(Icons.eco, size: 44, color: Colors.white),
-                      ),
-                    ),
+                    const Center(child: AppLogo(size: 96)),
                     const SizedBox(height: 20),
                     Text(
                       context.tr('create_account'),
@@ -167,15 +185,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 36),
                     CustomTextField(
                       hintText: context.tr('full_name_hint'),
-                  controller: _nameController,
-                  prefixIcon: const Icon(Icons.person_outlined),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return context.trRead('please_enter_name');
-                    }
-                    return null;
-                  },
-                ),
+                      controller: _nameController,
+                      prefixIcon: const Icon(Icons.person_outlined),
+                      textCapitalization: TextCapitalization.words,
+                      inputFormatters: nameInputFormatters,
+                      validator: (value) => validateName(value, context),
+                    ),
+                    const SizedBox(height: 16),
+                    DemographicsFields(controller: _demographics, enabled: !_isLoading),
                 const SizedBox(height: 16),
                 CustomTextField(
                   hintText: context.tr('email_hint'),
@@ -310,7 +327,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 if (_confirmPasswordController.text.isNotEmpty)
                   _buildConfirmPasswordStatus(context),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    Text(
+                      context.tr('data_collection_notice'),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(

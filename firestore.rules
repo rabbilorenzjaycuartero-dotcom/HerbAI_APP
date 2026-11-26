@@ -2,6 +2,41 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Admin accounts are marked by an admins/{uid} document, created only
+    // with the Admin SDK (never writable from the app).
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Profile with age/designation for the usage reports: the owner reads
+    // and writes their own; admins read all (Reports screen).
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create, update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.age is int
+        && request.resource.data.age >= 10 && request.resource.data.age <= 100
+        && request.resource.data.designation in
+             ['Student', 'Faculty', 'Herbalist', 'Farmer', 'Health worker', 'Others'];
+      allow delete: if false;
+    }
+
+    // Chatbot activity logs are written only by the server (Admin SDK) in
+    // /chat; only admins may read them.
+    match /chat_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Per-user daily chat counters, server-only.
+    match /chat_usage/{docId} {
+      allow read, write: if false;
+    }
     // Per-plant rating aggregate (plant_ratings/{plantId}): readable by any
     // signed-in user (so everyone sees the real average), writable only via
     // the transaction in RatingService.submitRating, which also writes the

@@ -38,6 +38,53 @@ class SymptomExtraction {
   }
 }
 
+class ChatQuickReply {
+  final String label;
+  final String action;
+
+  const ChatQuickReply({required this.label, required this.action});
+
+  factory ChatQuickReply.fromJson(Map<String, dynamic> json) => ChatQuickReply(
+        label: json['label'] as String,
+        action: json['action'] as String,
+      );
+}
+
+/// One chatbot turn from POST /chat. Herbs always come from the XGBoost
+/// model on the server; the reply text is written by Gemini (or a plain
+/// template when Gemini is unavailable).
+class ChatTurnResult {
+  final String reply;
+  final List<Plant> herbs;
+  final List<ChatQuickReply> quickReplies;
+  final Map<String, dynamic> state;
+  final bool redFlag;
+  final bool limitReached;
+
+  const ChatTurnResult({
+    required this.reply,
+    this.herbs = const [],
+    this.quickReplies = const [],
+    this.state = const {},
+    this.redFlag = false,
+    this.limitReached = false,
+  });
+
+  factory ChatTurnResult.fromJson(Map<String, dynamic> json) {
+    return ChatTurnResult(
+      reply: (json['reply'] as String?) ?? '',
+      herbs: ((json['herbs'] as List<dynamic>?) ?? [])
+          .map((h) => Plant.fromJson(h as Map<String, dynamic>))
+          .toList(),
+      quickReplies: ((json['quickReplies'] as List<dynamic>?) ?? [])
+          .map((q) => ChatQuickReply.fromJson(q as Map<String, dynamic>))
+          .toList(),
+      state: (json['state'] as Map<String, dynamic>?) ?? const {},
+      redFlag: json['redFlag'] == true,
+    );
+  }
+}
+
 /// Talks to the Flask API (api_server.py) that wraps the trained
 /// herb-relevance model. Follows the same static-method service pattern
 /// as FirebaseAuthService/SettingsService/LocalAuthService.
@@ -47,6 +94,10 @@ class ApiService {
   // caller's Future pending indefinitely -- the screen just spins forever
   // with no way out, regardless of how good the device's own internet is.
   static const _requestTimeout = Duration(seconds: 10);
+
+  // /send-verification-code logs in to Gmail SMTP and sends the email before
+  // it replies, which can take longer than 10 s.
+  static const _sendEmailTimeout = Duration(seconds: 30);
 
   static Uri _uri(String path) => Uri.parse('${AppConstants.apiBaseUrl}$path');
 
@@ -81,7 +132,9 @@ class ApiService {
 
   static Future<List<Plant>> fetchAllPlants() {
     return _withRetry(() async {
-      final response = await http.get(_uri('/plants')).timeout(_requestTimeout);
+      // ~3 MB payload: over a slow uplink it routinely needs longer than
+      // the 10s that suits the small endpoints.
+      final response = await http.get(_uri('/plants')).timeout(const Duration(seconds: 45));
       if (response.statusCode != 200) {
         throw Exception('Failed to load plants (${response.statusCode})');
       }
@@ -143,7 +196,7 @@ class ApiService {
             _uri('/send-verification-code'),
             headers: {'Authorization': 'Bearer $idToken'},
           )
-          .timeout(_requestTimeout);
+          .timeout(_sendEmailTimeout);
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('sendVerificationCode failed: $e');
@@ -220,6 +273,70 @@ class ApiService {
     } catch (e) {
       debugPrint('Login lockout request to $path failed: $e');
       return notLocked;
+    }
+  }
+
+  // A chat turn can make two Gemini calls plus the XGBoost ranking.
+  static const _chatTimeout = Duration(seconds: 30);
+
+  /// One chatbot turn. Throws on network/server errors so the chat screen
+  /// can show a retry; a daily-limit 429 comes back as a normal reply.
+  static Future<ChatTurnResult> sendChat({
+    required String idToken,
+    String message = '',
+    String action = '',
+    required List<Map<String, String>> history,
+    required Map<String, dynamic> state,
+    required String sessionId,
+    required String language,
+  }) async {
+    final response = await http
+        .post(
+          _uri('/chat'),
+          headers: {
+            'Authorization': 'Bearer $idToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'message': message,
+            'action': action,
+            'history': history,
+            'state': state,
+            'sessionId': sessionId,
+            'language': language,
+          }),
+        )
+        .timeout(_chatTimeout);
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 429 && data['reply'] is String) {
+      return ChatTurnResult(reply: data['reply'] as String, state: state, limitReached: true);
+    }
+    if (response.statusCode != 200) {
+      throw Exception('Chat failed (${response.statusCode})');
+    }
+    return ChatTurnResult.fromJson(data);
+  }
+
+  /// Records a "Select Your Symptoms" checklist search for the admin usage
+  /// reports. Fire-and-forget: never throws and never blocks navigation.
+  static Future<void> logChecklistSearch({
+    required String idToken,
+    required List<String> symptoms,
+    required List<String> conditions,
+  }) async {
+    try {
+      await http
+          .post(
+            _uri('/log-checklist'),
+            headers: {
+              'Authorization': 'Bearer $idToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'symptoms': symptoms, 'conditions': conditions}),
+          )
+          .timeout(_chatTimeout);
+    } catch (e) {
+      debugPrint('logChecklistSearch failed: $e');
     }
   }
 

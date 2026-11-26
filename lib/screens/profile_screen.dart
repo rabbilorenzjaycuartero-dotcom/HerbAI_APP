@@ -28,10 +28,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadStats() async {
     final uid = FirebaseAuthService.currentUser?.uid;
-    final results = await Future.wait([
-      if (uid != null) RatingService.getUserReviewCount(uid) else Future.value(0),
-      SettingsService.getSearchCount(),
-    ]);
+    // The review count needs Firestore; if the network is down, keep the
+    // local search count instead of letting the whole load throw.
+    final reviewFuture = uid == null
+        ? Future.value(0)
+        : RatingService.getUserReviewCount(uid).catchError((Object e) {
+            debugPrint('getUserReviewCount failed: $e');
+            return 0;
+          });
+    final results = await Future.wait([reviewFuture, SettingsService.getSearchCount()]);
     if (!mounted) return;
     setState(() {
       _reviewCount = results[0];

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/app_theme.dart';
 import '../core/app_constants.dart';
+import 'app_logo.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
@@ -27,7 +27,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : Row(
               children: [
-                Icon(Icons.eco, color: AppTheme.primary, size: 28),
+                const AppLogo(size: 32),
                 const SizedBox(width: 8),
                 Text(
                   AppConstants.appName,

@@ -127,6 +127,16 @@ class SymptomProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Hands the chatbot's collected symptoms/conditions to the full
+  /// Recommendations screen ("Show all herbs" in the chat).
+  void setSelectionFromChat(List<String> symptomIds, List<String> conditions) {
+    _selectedSymptomIds = symptomIds.toSet();
+    _selectedConditions
+      ..clear()
+      ..addAll(conditions);
+    notifyListeners();
+  }
+
   /// Calls the ML backend for the currently selected symptoms and caches
   /// the ranked results. Call this once when entering the recommendations
   /// screen; sorting/filtering afterwards (getRecommendedPlants) is local

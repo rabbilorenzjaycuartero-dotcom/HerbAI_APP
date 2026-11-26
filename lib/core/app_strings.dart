@@ -55,14 +55,17 @@ class AppStrings {
       'Filipino': 'Galugarin ang aming kumpletong aklatan ng halamang gamot',
     },
     'start_herbal_recommendation': {
-      'English': 'Start Herbal Recommendation',
-      'Filipino': 'Simulan ang Rekomendasyon ng Halamang Gamot',
+      'English': 'Ask the HerbAI Chatbot',
+      'Filipino': 'Magtanong sa HerbAI Chatbot',
     },
     'select_symptoms_ai_blurb': {
-      'English': "Select your symptoms and let HERBAI's AI recommend the most suitable medicinal plants.",
-      'Filipino': 'Piliin ang iyong mga sintomas at hayaang irekomenda ng AI ng HERBAI ang pinakaangkop na halamang gamot.',
+      'English': 'Tell the chatbot how you feel in English, Bisaya or Tagalog, and HERBAI\'s AI will recommend suitable medicinal plants.',
+      'Filipino': 'Sabihin sa chatbot ang nararamdaman mo sa English, Bisaya o Tagalog, at irerekomenda ng AI ng HERBAI ang angkop na halamang gamot.',
     },
-    'start_recommendation': {'English': 'Start Recommendation', 'Filipino': 'Simulan ang Rekomendasyon'},
+    'start_recommendation': {
+      'English': 'Start Chat',
+      'Filipino': 'Simulan ang Chat',
+    },
 
     // Login screen
     'welcome_back': {'English': 'Welcome Back', 'Filipino': 'Maligayang Pagbabalik'},
@@ -99,6 +102,11 @@ class AppStrings {
     },
     'full_name_hint': {'English': 'Full Name', 'Filipino': 'Buong Pangalan'},
     'please_enter_name': {'English': 'Please enter your name', 'Filipino': 'Pakilagay ang iyong pangalan'},
+    'name_letters_only': {
+      'English': 'Name can only contain letters',
+      'Filipino': 'Mga letra lamang ang puwede sa pangalan',
+    },
+    'name_too_short': {'English': 'Please enter your full name', 'Filipino': 'Pakilagay ang buong pangalan'},
     'email_already_registered': {
       'English': 'This email is already registered.',
       'Filipino': 'Ang email na ito ay rehistrado na.',
@@ -213,8 +221,8 @@ class AppStrings {
     'about_herbai_title': {'English': 'About HERBAI', 'Filipino': 'Tungkol sa HERBAI'},
     'version_1_0_0': {'English': 'Version 1.0.0', 'Filipino': 'Bersyon 1.0.0'},
     'developer_team': {
-      'English': 'Developer: Herbal Research Team',
-      'Filipino': 'Taga-develop: Herbal Research Team',
+      'English': 'Developed by BSIT students of Caraga State University – Cabadbaran Campus',
+      'Filipino': 'Binuo ng mga estudyante ng BSIT ng Caraga State University – Cabadbaran Campus',
     },
     'research_title_label': {'English': 'Research Title', 'Filipino': 'Pamagat ng Pananaliksik'},
     'research_title_value': {
@@ -223,23 +231,42 @@ class AppStrings {
     },
     'app_description_label': {'English': 'App Description', 'Filipino': 'Paglalarawan ng App'},
     'app_description_value': {
-      'English': 'HERBAI is a modern healthcare application that preserves and promotes ethnobotanical herbal knowledge. The application allows users to explore herbal plants, search medicinal information, save favorite plants, and prepares for future AI-powered herbal recommendations and plant image identification.',
-      'Filipino': 'Ang HERBAI ay isang modernong aplikasyon sa pangangalagang pangkalusugan na nagpapanatili at nagtataguyod ng kaalaman sa etnobotanikal na halamang gamot. Hinahayaan ng application ang mga user na mag-explore ng mga halamang gamot, maghanap ng impormasyong medisinal, i-save ang mga paboritong halaman, at ihanda ang sarili para sa hinaharap na AI-powered na mga rekomendasyon ng halamang gamot at pagkilala sa larawan ng halaman.',
+      'English': 'HERBAI is a mobile app that recommends local medicinal plants based on the symptoms you select or describe in your own words. Its AI model is trained on ethnobotanical records of 1,580 herbal plants and 150 symptoms. For each plant, HERBAI shows its traditional uses, how it is prepared, its precautions, and the source of the information. HERBAI is for educational purposes only and is not a substitute for medical advice.',
+      'Filipino': 'Ang HERBAI ay isang mobile app na nagrerekomenda ng mga lokal na halamang gamot batay sa mga sintomas na pinili mo o inilarawan mo sa sarili mong salita. Ang AI model nito ay sinanay gamit ang etnobotanikal na tala ng 1,580 halamang gamot at 150 sintomas. Para sa bawat halaman, ipinapakita ng HERBAI ang tradisyunal na gamit nito, kung paano ito inihahanda, ang mga pag-iingat, at ang pinagmulan ng impormasyon. Ang HERBAI ay para sa layuning pang-edukasyon lamang at hindi kapalit ng payong medikal.',
+    },
+    'key_features_label': {'English': 'Key Features', 'Filipino': 'Mga Pangunahing Tampok'},
+    'key_features_value': {
+      'English': '• AI herbal recommendations from your selected symptoms\n'
+          '• Describe your symptoms in English, Bisaya or Tagalog, with spelling suggestions\n'
+          '• Safety warnings for pregnancy, breastfeeding and children\n'
+          '• Plants with toxicity warnings are hidden from low-confidence results\n'
+          '• DOH Approved badge and a source link for each plant\n'
+          '• Plant ratings and reviews, favorites and plant search\n'
+          '• Dark mode, Filipino language and new-plant notifications\n'
+          '• Secure account with email verification',
+      'Filipino': '• AI na rekomendasyon ng halamang gamot mula sa mga piniling sintomas\n'
+          '• Ilarawan ang iyong sintomas sa English, Bisaya o Tagalog, may mungkahi sa baybay\n'
+          '• Babala sa kaligtasan para sa buntis, nagpapasuso at mga bata\n'
+          '• Itinatago ang mga halamang may babala ng toxicity kapag mababa ang kumpiyansa ng resulta\n'
+          '• DOH Approved na tanda at link sa pinagmulan ng bawat halaman\n'
+          '• Rating at review ng halaman, mga paborito at paghahanap ng halaman\n'
+          '• Dark mode, wikang Filipino at abiso sa bagong halaman\n'
+          '• Ligtas na account na may email verification',
     },
     'our_mission_label': {'English': 'Our Mission', 'Filipino': 'Aming Misyon'},
     'our_mission_value': {
-      'English': 'To bridge the gap between traditional herbal knowledge and modern technology, making natural remedies accessible, reliable, and easy to discover for everyone worldwide.',
-      'Filipino': 'Upang tugunan ang puwang sa pagitan ng tradisyunal na kaalaman sa halamang gamot at modernong teknolohiya, ginagawang naa-access, maaasahan, at madaling matuklasan ang natural na lunas para sa lahat sa buong mundo.',
+      'English': 'To bridge traditional herbal knowledge and modern technology by making local medicinal plants easy to discover, understand, and use safely.',
+      'Filipino': 'Upang pagdugtungin ang tradisyunal na kaalaman sa halamang gamot at ang modernong teknolohiya sa pamamagitan ng paggawang madaling matuklasan, maunawaan, at ligtas na gamitin ang mga lokal na halamang gamot.',
     },
     'our_vision_label': {'English': 'Our Vision', 'Filipino': 'Aming Bisyon'},
     'our_vision_value': {
-      'English': 'A world where traditional herbal wisdom is preserved, respected, and integrated with modern healthcare practices for the benefit of all.',
-      'Filipino': 'Isang mundo kung saan ang tradisyunal na karunungan sa halamang gamot ay napapanatili, iginagalang, at isinasama sa modernong gawi sa pangangalagang pangkalusugan para sa kapakinabangan ng lahat.',
+      'English': 'A community where traditional herbal knowledge is preserved, respected, and used safely alongside modern healthcare.',
+      'Filipino': 'Isang komunidad kung saan ang tradisyunal na kaalaman sa halamang gamot ay napapanatili, iginagalang, at ligtas na ginagamit kasabay ng modernong pangangalagang pangkalusugan.',
     },
     'research_development_label': {'English': 'Research & Development', 'Filipino': 'Pananaliksik at Pag-unlad'},
     'research_development_value': {
-      'English': 'Our team works closely with botanists, traditional healers, and researchers to ensure accurate and reliable information. Future updates will include AI-powered recommendations and plant identification.',
-      'Filipino': 'Ang aming team ay malapit na nakikipagtulungan sa mga botanist, tradisyunal na manggagamot, at mananaliksik upang matiyak ang tumpak at maaasahang impormasyon. Ang mga susunod na update ay magsasama ng AI-powered na mga rekomendasyon at pagkilala sa halaman.',
+      'English': 'HERBAI was developed as a Capstone Project at Caraga State University – Cabadbaran Campus and evaluated with respondents from the Forestry Program. It is intended for further development and deployment under the Forestry Program of Caraga State University – Main Campus.',
+      'Filipino': 'Ang HERBAI ay binuo bilang isang Capstone Project sa Caraga State University – Cabadbaran Campus at sinuri kasama ang mga respondent mula sa Forestry Program. Nilalayon itong paunlarin pa at ilunsad sa ilalim ng Forestry Program ng Caraga State University – Main Campus.',
     },
     'copyright_herbai': {
       'English': '© 2026 HERBAI. All rights reserved.',
@@ -247,26 +274,32 @@ class AppStrings {
     },
 
     // Privacy policy screen
-    'last_updated_july_2026': {'English': 'Last Updated: July 2026', 'Filipino': 'Huling Na-update: Hulyo 2026'},
+    'last_updated_july_2026': {
+      'English': 'Last Updated: November 2026',
+      'Filipino': 'Huling Na-update: Nobyembre 2026',
+    },
     'pp_section_1_title': {'English': '1. Data Collection', 'Filipino': '1. Pagkolekta ng Data'},
     'pp_section_1_body': {
-      'English': 'HERBAI is designed to prioritize your privacy. Currently, the application operates entirely locally on your device and does not collect any personal data, user information, or usage statistics. All data, including your favorite plants, settings, and search history, is stored locally on your device using SharedPreferences.',
-      'Filipino': 'Ang HERBAI ay dinisenyo upang unahin ang iyong privacy. Sa ngayon, gumagana ang application nang ganap na lokal sa iyong device at hindi kumokolekta ng anumang personal na data, impormasyon ng user, o usage statistics. Ang lahat ng data, kasama ang iyong mga paboritong halaman, setting, at kasaysayan ng paghahanap, ay naka-imbak nang lokal sa iyong device gamit ang SharedPreferences.',
+      'English': 'When you create an account, HERBAI stores your name, email address, age and designation (for example Student or Farmer) in Firebase. When you use the chatbot, the messages you type, the symptoms detected and the herbs recommended are recorded with your account. This information is used only for research reports of this capstone project, such as the age and designation of users and their most common symptom concerns.',
+      'Filipino': 'Kapag gumawa ka ng account, iniimbak ng HERBAI sa Firebase ang iyong pangalan, email address, edad at designation (halimbawa Student o Farmer). Kapag ginamit mo ang chatbot, itinatala kasama ng iyong account ang mga mensaheng tina-type mo, ang mga natukoy na sintomas at ang mga halamang inirekomenda. Ginagamit lamang ang impormasyong ito para sa mga research report ng capstone project na ito, gaya ng edad at designation ng mga user at ang kanilang pinakakaraniwang mga sintomas.',
     },
     'pp_section_2_title': {'English': '2. User Privacy', 'Filipino': '2. Privacy ng User'},
     'pp_section_2_body': {
-      'English': 'We are committed to protecting your privacy. Since no data is collected from your device, there is no risk of your personal information being shared, sold, or accessed by third parties. Your herbal plant preferences and usage remain completely private and confidential.',
-      'Filipino': 'Kami ay nakatuon sa pagprotekta sa iyong privacy. Dahil walang data na kinokolekta mula sa iyong device, walang panganib na mas-share, maibenta, o ma-access ng ibang partido ang iyong personal na impormasyon. Ang iyong mga kagustuhan at paggamit ng halamang gamot ay nananatiling ganap na pribado at kumpidensyal.',
+      'English': 'Only the HERBAI research team (admin account) can view the usage reports. Your data is not sold. Chatbot messages are processed by Google Gemini to write the replies; only the message text is sent, never your name, email, age or designation. Herb recommendations always come from the HERBAI model and database.',
+      'Filipino': 'Ang HERBAI research team lamang (admin account) ang makakakita ng mga usage report. Hindi ibinebenta ang iyong data. Ang mga mensahe sa chatbot ay pinoproseso ng Google Gemini upang isulat ang mga sagot; ang teksto lamang ng mensahe ang ipinapadala, hindi kailanman ang iyong pangalan, email, edad o designation. Ang mga rekomendasyon ng halaman ay palaging galing sa HERBAI model at database.',
     },
     'pp_section_3_title': {'English': '3. Local Storage', 'Filipino': '3. Lokal na Imbakan'},
     'pp_section_3_body': {
       'English': 'All application data is stored locally on your mobile device. This includes:\n• Theme preferences (light/dark mode)\n• Notification settings\n• Language selection\n• Favorite plants\n• Recent searches\n\nYou can clear this data at any time by resetting your settings within the application or by uninstalling the app.',
       'Filipino': 'Ang lahat ng data ng application ay naka-imbak nang lokal sa iyong mobile device. Kasama dito:\n• Mga kagustuhan sa theme (light/dark mode)\n• Mga setting ng notification\n• Pagpili ng wika\n• Mga paboritong halaman\n• Kamakailang paghahanap\n\nMaaari mong burahin ang data na ito anumang oras sa pamamagitan ng pag-reset ng iyong mga setting sa loob ng application o sa pag-uninstall ng app.',
     },
-    'pp_section_4_title': {'English': '4. Future AI Features', 'Filipino': '4. Mga Hinaharap na Feature ng AI'},
+    'pp_section_4_title': {
+      'English': '4. AI Chatbot',
+      'Filipino': '4. AI Chatbot',
+    },
     'pp_section_4_body': {
-      'English': 'Future versions of HERBAI may include AI-driven features such as plant identification and personalized recommendations. These features will be optional, and we will update this privacy policy accordingly before implementing any changes that involve data collection or processing outside of your device.',
-      'Filipino': 'Ang mga susunod na bersyon ng HERBAI ay maaaring may kasamang mga feature na pinapagana ng AI tulad ng pagkilala sa halaman at personalisadong rekomendasyon. Ang mga feature na ito ay magiging optional, at ia-update namin ang patakarang ito sa privacy bago ipatupad ang anumang pagbabagong may kinalaman sa pagkolekta o pagproseso ng data sa labas ng iyong device.',
+      'English': 'The HerbAI chatbot uses the HERBAI symptom extractor and XGBoost model to choose herbs, and Google Gemini to write the conversation. It is for educational use only and is not a substitute for a doctor. For serious symptoms, go to the nearest health center or hospital.',
+      'Filipino': 'Ginagamit ng HerbAI chatbot ang symptom extractor at XGBoost model ng HERBAI para pumili ng halaman, at ang Google Gemini para isulat ang usapan. Ito ay para sa edukasyon lamang at hindi kapalit ng doktor. Para sa malubhang sintomas, pumunta sa pinakamalapit na health center o ospital.',
     },
     'pp_section_5_title': {'English': '5. Contact Information', 'Filipino': '5. Impormasyon sa Pakikipag-ugnayan'},
     'pp_section_5_body': {
@@ -538,6 +571,56 @@ class AppStrings {
 
     // Source webview screen
     'source': {'English': 'Source', 'Filipino': 'Pinagmulan'},
+
+    // Panel revision: demographics, chatbot, admin usage reports
+    'age_hint': {'English': 'Age', 'Filipino': 'Edad'},
+    'please_enter_age': {'English': 'Please enter your age', 'Filipino': 'Pakilagay ang iyong edad'},
+    'age_out_of_range': {'English': 'Please enter an age from 10 to 100', 'Filipino': 'Pakilagay ang edad mula 10 hanggang 100'},
+    'designation_hint': {'English': 'Designation / Position', 'Filipino': 'Designation / Posisyon'},
+    'please_select_designation': {'English': 'Please select your designation', 'Filipino': 'Pakipili ang iyong designation'},
+    'designation_other_hint': {'English': 'Please specify your designation', 'Filipino': 'Pakisabi ang iyong designation'},
+    'please_specify_designation': {'English': 'Please specify your designation', 'Filipino': 'Pakisabi ang iyong designation'},
+    'designation_student': {'English': 'Student', 'Filipino': 'Estudyante'},
+    'designation_faculty': {'English': 'Faculty', 'Filipino': 'Guro / Faculty'},
+    'designation_herbalist': {'English': 'Herbalist', 'Filipino': 'Herbalista'},
+    'designation_farmer': {'English': 'Farmer', 'Filipino': 'Magsasaka'},
+    'designation_health_worker': {'English': 'Health worker', 'Filipino': 'Health worker'},
+    'designation_others': {'English': 'Others', 'Filipino': 'Iba pa'},
+    'data_collection_notice': {'English': 'Your age, designation and chatbot messages are recorded for the research reports of this capstone project. See the Privacy Policy in Settings.', 'Filipino': 'Itinatala ang iyong edad, designation at mga mensahe sa chatbot para sa mga research report ng capstone project na ito. Tingnan ang Privacy Policy sa Settings.'},
+    'complete_profile_title': {'English': 'Complete Your Profile', 'Filipino': 'Kumpletuhin ang Iyong Profile'},
+    'complete_profile_subtitle': {'English': 'Please tell us your age and designation. This is needed once for the HerbAI usage reports.', 'Filipino': 'Pakisabi ang iyong edad at designation. Kailangan ito nang isang beses para sa mga usage report ng HerbAI.'},
+    'chat_title': {'English': 'HerbAI Chatbot', 'Filipino': 'HerbAI Chatbot'},
+    'chat_greeting': {'English': 'Hi! I\'m the HerbAI Assistant. Tell me how you feel in English, Bisaya or Tagalog (for example: "naa koy ubo ug hilanat" or "I have a headache"), and I\'ll suggest herbal plants that may help.', 'Filipino': 'Hi! Ako ang HerbAI Assistant. Sabihin mo kung ano ang nararamdaman mo sa English, Bisaya o Tagalog (halimbawa: "may ubo at lagnat ako" o "I have a headache"), at magmumungkahi ako ng mga halamang gamot na maaaring makatulong.'},
+    'chat_error': {'English': 'I could not reach the server. Please check your internet connection and try again.', 'Filipino': 'Hindi ko maabot ang server. Pakisuri ang iyong internet connection at subukang muli.'},
+    'chat_new_conversation': {'English': 'New conversation', 'Filipino': 'Bagong usapan'},
+    'chat_notice': {'English': 'For educational use only, not a substitute for a doctor. Your messages are recorded for research reports.', 'Filipino': 'Para sa edukasyon lamang, hindi kapalit ng doktor. Itinatala ang iyong mga mensahe para sa research report.'},
+    'chat_has_condition_warning': {'English': 'Has a precaution for your condition, tap to read', 'Filipino': 'May paalala para sa iyong kondisyon, i-tap para basahin'},
+    'chat_typing': {'English': 'HerbAI is typing...', 'Filipino': 'Nagta-type ang HerbAI...'},
+    'chat_input_hint': {'English': 'Type how you feel...', 'Filipino': 'I-type ang nararamdaman mo...'},
+    'admin_section': {'English': 'Admin', 'Filipino': 'Admin'},
+    'reports_title': {'English': 'Usage Reports', 'Filipino': 'Mga Usage Report'},
+    'report_load_failed': {'English': 'Could not load the report. Pull down to try again.', 'Filipino': 'Hindi ma-load ang report. Hilahin pababa para subukang muli.'},
+    'report_export_failed': {'English': 'Could not create the PDF report.', 'Filipino': 'Hindi magawa ang PDF report.'},
+    'report_export_pdf': {'English': 'Export PDF Report', 'Filipino': 'I-export ang PDF Report'},
+    'report_last_7_days': {'English': 'Last 7 days', 'Filipino': 'Huling 7 araw'},
+    'report_last_30_days': {'English': 'Last 30 days', 'Filipino': 'Huling 30 araw'},
+    'report_all_time': {'English': 'All time', 'Filipino': 'Lahat ng panahon'},
+    'report_registered_users': {'English': 'Registered users', 'Filipino': 'Mga rehistradong user'},
+    'report_chat_messages': {'English': 'Chatbot messages', 'Filipino': 'Mga mensahe sa chatbot'},
+    'report_active_users': {'English': 'Active users', 'Filipino': 'Mga aktibong user'},
+    'report_users_by_designation': {'English': 'Who uses HerbAI: by designation', 'Filipino': 'Sino ang gumagamit: ayon sa designation'},
+    'report_users_by_age': {'English': 'Who uses HerbAI: by age group', 'Filipino': 'Sino ang gumagamit: ayon sa edad'},
+    'report_top_concerns': {'English': 'Most common symptom concerns', 'Filipino': 'Pinakakaraniwang sintomas'},
+    'report_concerns_by_designation': {'English': 'Symptom concerns by designation', 'Filipino': 'Mga sintomas ayon sa designation'},
+    'report_concerns_by_age': {'English': 'Symptom concerns by age group', 'Filipino': 'Mga sintomas ayon sa edad'},
+    'report_top_words': {'English': 'Most frequent words typed', 'Filipino': 'Pinakamadalas na salitang tina-type'},
+    'report_top_herbs': {'English': 'Most recommended herbs', 'Filipino': 'Pinakamadalas na inirekomendang halaman'},
+    'report_recent_logs': {'English': 'Chatbot activity log', 'Filipino': 'Activity log ng chatbot'},
+    'report_user_list': {'English': 'Registered users list', 'Filipino': 'Listahan ng mga user'},
+    'report_no_data': {'English': 'No data for this period yet.', 'Filipino': 'Wala pang data para sa panahong ito.'},
+    'report_detected': {'English': 'Detected', 'Filipino': 'Natukoy'},
+    'select_symptoms_card_subtitle': {'English': 'Pick your symptoms from a list', 'Filipino': 'Pumili ng sintomas mula sa listahan'},
+    'report_checklist_searches': {'English': 'Checklist searches', 'Filipino': 'Mga checklist search'},
   };
 
   static String t(String key, String language) =>
