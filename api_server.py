@@ -27,6 +27,14 @@ Endpoints:
                             a failed Firebase sign-in to advance the counter
     POST /login-lockout/record-success -> {"email": ...} -> clears the
                             counter; call after a successful sign-in
+    POST /chat           -> symptom chatbot turn (Bearer token required):
+                            {"message", "action", "history", "state",
+                            "sessionId", "language"} -> {"reply", "herbs",
+                            "quickReplies", "state", ...}. Herbs always come
+                            from the XGBoost model; Gemini (free tier,
+                            GEMINI_API_KEY in .env) only writes the reply.
+                            Each turn is logged to Firestore chat_logs for
+                            the admin Reports screen. See chat_service.py.
 
 /recommend excludes herbs flagged dangerous in their Precautions text unless
 the model's relevance score clears a high confidence bar -- see
@@ -38,8 +46,11 @@ herb #1 ahead of the genuinely correct, well-labeled matches.
 
 Every herb JSON object matches the Flutter `Plant` model's fields exactly.
 Fields not present in the gathered data (rating, reviewCount, categories,
-availability, isDohRecognized, isEasyToPrepare) get the same neutral
-default for every herb. The four safetyInfo booleans are returned as null
+availability, isEasyToPrepare) get the same neutral default for every herb.
+isDohRecognized is real: it's true for the ~20 herbs matching DOH's list of
+10 clinically-tested herbal medicines (see the "DOH Approved" column), and
+is purely informational -- it does not feed /recommend's ranking, which is
+symptom-match only. The four safetyInfo booleans are returned as null
 (unverified) rather than a fabricated true/false, since a flat false would
 render as a false "not safe" claim in the app's UI. imageUrl points at a
 real extracted photo where extract_images.py found one (~38% of herbs),
@@ -75,6 +86,7 @@ from train_symptom_extractor import extract_symptoms_from_text
 from symptom_spelling import build_symptom_words, spelling_suggestions
 from condition_safety import get_condition_warnings
 from herb_safety import is_flagged_dangerous, DANGER_CONFIDENCE_THRESHOLD
+import chat_service
 
 load_dotenv()
 
@@ -228,7 +240,7 @@ preprocessed_df = pd.read_csv(PREPROCESSED_CSV)
 # exposed to the app as the herb "id".
 assert len(raw_df) == len(preprocessed_df), "raw/preprocessed CSV row-count mismatch"
 meta_df = preprocessed_df.copy()
-for col in ["Symptoms", "Preparation", "Precautions", "Botany", "Source URL"]:
+for col in ["Symptoms", "Preparation", "Precautions", "Botany", "Source URL", "DOH Approved"]:
     meta_df[col] = raw_df[col].values
 meta_by_pos = meta_df.to_dict("index")
 print(f"Loaded {len(meta_by_pos)} herbs, {len(symptom_cols)} symptoms.")
@@ -353,7 +365,7 @@ def _herb_to_json(pos, rec, relevance_score=None, conditions=None, rating_aggreg
         "rating": agg.get("rating", 0.0),
         "reviewCount": agg.get("reviewCount", 0),
         "imageUrl": _image_url(pos),
-        "isDohRecognized": False,
+        "isDohRecognized": bool(rec.get("DOH Approved")),
         "safetyInfo": {
             "safeForAdults": None,
             "safeForChildren": None,
@@ -552,19 +564,16 @@ def post_extract_symptoms():
     })
 
 
-@app.route("/recommend", methods=["POST"])
-def post_recommend():
-    data = request.get_json(force=True) or {}
-    symptoms = data.get("symptoms", [])
-    top_n = int(data.get("topN", 10))
-    conditions = data.get("conditions", [])
-
+def _recommend_payload(symptoms, conditions, top_n):
+    """Ranked, safety-filtered herb JSON for a symptom list -- shared by
+    /recommend and the chatbot's /chat so both serve exactly the same
+    model output."""
     # Fetch a larger candidate pool than requested so filtering out
     # low-confidence dangerous herbs below can still leave top_n results,
     # instead of truncating first and losing the chance to backfill.
     result_df = recommend_herbs(bundle, symptoms, top_n=max(top_n * 5, 50))
     if result_df.empty:
-        return jsonify([])
+        return []
 
     rating_aggregates = _fetch_rating_aggregates()
     out = []
@@ -581,7 +590,258 @@ def post_recommend():
         ))
         if len(out) >= top_n:
             break
-    return jsonify(out)
+    return out
+
+
+@app.route("/recommend", methods=["POST"])
+def post_recommend():
+    data = request.get_json(force=True) or {}
+    symptoms = data.get("symptoms", [])
+    top_n = int(data.get("topN", 10))
+    conditions = data.get("conditions", [])
+    return jsonify(_recommend_payload(symptoms, conditions, top_n))
+
+
+CHAT_DAILY_LIMIT = 30
+herb_aliases = chat_service.build_herb_aliases(meta_by_pos)
+local_terms = chat_service.build_local_term_matcher(symptom_cols)
+
+
+def _consume_chat_quota(uid):
+    """Counts this user's chat messages per day (chat_usage/{uid}_{date}) so
+    one account can't burn through the free Gemini quota. Fails open if
+    Firestore is unavailable."""
+    if firestore_db is None:
+        return True
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        doc_ref = firestore_db.collection("chat_usage").document(f"{uid}_{today}")
+        doc_ref.set({"uid": uid, "date": today, "count": firebase_firestore.Increment(1)}, merge=True)
+        return (doc_ref.get().to_dict() or {}).get("count", 0) <= CHAT_DAILY_LIMIT
+    except Exception as error:
+        print(f"WARNING: chat quota check failed ({error!r}); allowing the message.")
+        return True
+
+
+def _log_chat_turn(uid, entry):
+    """Writes one chatbot turn to Firestore chat_logs for the admin Reports
+    screen, with a snapshot of the user's profile (users/{uid}) so reports
+    need no joins. Never blocks or breaks the chat."""
+    if firestore_db is None:
+        return
+    try:
+        profile = firestore_db.collection("users").document(uid).get()
+        profile = profile.to_dict() if profile.exists else {}
+        firestore_db.collection("chat_logs").add({
+            **entry,
+            "uid": uid,
+            "userName": profile.get("name") or "",
+            "age": profile.get("age"),
+            "designation": profile.get("designation") or "Not specified",
+            "createdAt": firebase_firestore.SERVER_TIMESTAMP,
+        })
+    except Exception as error:
+        print(f"WARNING: failed to log chat turn ({error!r}).")
+
+
+@app.route("/chat", methods=["POST"])
+def post_chat():
+    if not _firebase_admin_ready:
+        return jsonify({"error": "chat service unavailable"}), 503
+    claims = _verify_request_token()
+    if claims is None:
+        return jsonify({"error": "unauthorized"}), 401
+    uid = claims["uid"]
+
+    data = request.get_json(force=True) or {}
+    message = str(data.get("message", "")).strip()
+    if len(message) > MAX_SYMPTOM_TEXT_LENGTH:
+        return jsonify({"error": f"message must be {MAX_SYMPTOM_TEXT_LENGTH} characters or fewer"}), 400
+    action = str(data.get("action") or "")
+    language = "Filipino" if data.get("language") == "Filipino" else "English"
+    history = data.get("history") if isinstance(data.get("history"), list) else []
+    session_id = str(data.get("sessionId", ""))[:64]
+    state = data.get("state") if isinstance(data.get("state"), dict) else {}
+    symptoms = [s for s in state.get("symptoms", []) if s in symptom_cols]
+    conditions = [c for c in state.get("conditions", []) if c in chat_service.CONDITION_IDS]
+    stage = state.get("stage") if state.get("stage") in ("symptoms", "conditions", "done") else "symptoms"
+    if not message and not action:
+        return jsonify({"error": "message or action required"}), 400
+
+    if not _consume_chat_quota(uid):
+        limit_msg = (
+            "Naabot mo na ang limit ng chat ngayong araw. Subukan ulit bukas."
+            if language == "Filipino" else
+            "You've reached today's chat limit. Please try again tomorrow."
+        )
+        return jsonify({"error": "daily limit reached", "reply": limit_msg}), 429
+
+    labels = chat_service.QUICK_REPLY_LABELS[language]
+    if action == "restart":
+        symptoms, conditions, stage = [], [], "symptoms"
+    elif action == "done_symptoms":
+        stage = "conditions" if symptoms else "symptoms"
+    elif action in chat_service.CONDITION_IDS:
+        conditions = list(dict.fromkeys(conditions + [action]))
+        stage = "done"
+    elif action == "no_conditions":
+        stage = "done"
+
+    new_symptoms, symptom_source, mentioned, red_flag = [], None, [], False
+    if message:
+        red_flag = chat_service.is_red_flag(message)
+        mentioned = chat_service.find_mentioned_herbs(message, herb_aliases)
+        text_conditions = chat_service.detect_conditions(message)
+        conditions = list(dict.fromkeys(conditions + text_conditions))
+        # Short answers like "yun lang" / "dili ko buntis" are replies to the
+        # bot's question, not symptom descriptions -- running the extractor
+        # on them was observed to invent symptoms ("poor appetite").
+        answered_conditions = stage == "conditions" and (
+            text_conditions or chat_service.says_no_conditions(message)
+        )
+        finished_listing = stage == "symptoms" and symptoms and chat_service.says_done(message)
+        if answered_conditions:
+            stage = "done"
+        elif finished_listing:
+            stage = "conditions"
+        else:
+            found = extract_symptoms_from_text(extractor_bundle, message)
+            symptom_source = "model" if found else None
+            # Free local-term dictionary (Bisaya/Tagalog) supplements the ML
+            # extractor, which misses short multi-symptom Bisaya sentences.
+            local = [s for s in chat_service.match_local_terms(message, local_terms) if s not in found]
+            if local:
+                found = found + local
+                symptom_source = "model+dictionary" if symptom_source else "dictionary"
+            if not found and not mentioned:
+                found = chat_service.llm_extract_symptoms(message, symptom_cols)
+                symptom_source = "llm" if found else None
+            new_symptoms = [s for s in found if s not in symptoms]
+            symptoms = symptoms + new_symptoms
+    if stage == "conditions" and conditions:
+        stage = "done"  # conditions were already given in an earlier message
+
+    herbs_json = []
+    if stage == "done" and symptoms:
+        herbs_json = _recommend_payload(symptoms, conditions, chat_service.MAX_HERBS_IN_CHAT)
+    elif stage == "done":
+        stage = "symptoms"
+    herb_recs = [meta_by_pos[int(h["id"])] for h in herbs_json]
+    mentioned_recs = [meta_by_pos[p] for p in mentioned]
+
+    if stage == "done":
+        next_step = (
+            "Present the RECOMMENDED HERBS (they are shown as cards under your reply). "
+            "If CONDITIONS is not none, point out any precaution about those conditions. "
+            "End by reminding that this is educational and to consult a health professional if symptoms persist."
+            if herbs_json else
+            "No suitable herb was found; say so and suggest consulting a health professional."
+        )
+    elif stage == "conditions":
+        next_step = (
+            "Briefly acknowledge the symptoms, then ask ONE question: is the user pregnant, "
+            "breastfeeding, or asking for a child? They can tap a button or answer none."
+        )
+    elif new_symptoms:
+        next_step = (
+            "Briefly acknowledge the newly detected symptoms in the user's language and ask if they "
+            f"feel anything else. Tell them to tap '{labels['done_symptoms']}' when finished."
+        )
+    elif mentioned_recs:
+        next_step = (
+            "Answer the user's question about the herb(s) they mentioned using ONLY the database record. "
+            "Then invite them to describe their symptoms if they want recommendations."
+        )
+    else:
+        next_step = (
+            "No symptom was detected. If the user only greeted you, greet back and ask how they feel. "
+            "Otherwise ask them to describe their symptoms in other words, with a short example "
+            "like 'naa koy ubo ug hilanat' or 'I have a headache'."
+        )
+
+    warnings = [
+        f"{h['name']}: {w['note']}" for h in herbs_json for w in h.get("conditionWarnings", [])
+    ]
+    context = chat_service.build_context(
+        next_step=next_step, new_symptoms=new_symptoms, all_symptoms=symptoms,
+        conditions=conditions, herbs_recs=herb_recs, mentioned_recs=mentioned_recs,
+        red_flag=red_flag, symptom_cols=symptom_cols, language=language,
+    )
+    if warnings:
+        context += "\nCONDITION WARNINGS FROM THE DATA:\n" + "\n".join(f"- {w}" for w in warnings)
+
+    user_text = message or labels.get(action, action)
+    reply = chat_service.llm_reply(history, user_text, context)
+    reply_source = "gemini"
+    if reply is None:
+        reply_source = "template"
+        reply = chat_service.build_template_reply(
+            language=language, stage=stage, new_symptoms=new_symptoms, all_symptoms=symptoms,
+            herb_names=[h["name"] for h in herbs_json], mentioned_recs=mentioned_recs,
+            red_flag=red_flag,
+        )
+
+    _log_chat_turn(uid, {
+        "source": "chatbot",
+        "sessionId": session_id,
+        "message": message,
+        "action": action or None,
+        "detectedSymptoms": new_symptoms,
+        "symptomSource": symptom_source,
+        "allSymptoms": symptoms,
+        "conditions": conditions,
+        "recommendedHerbs": [h["name"] for h in herbs_json],
+        "mentionedHerbs": [r["Herbal Name"] for r in mentioned_recs],
+        "redFlag": red_flag,
+        "reply": reply,
+        "replySource": reply_source,
+        "language": language,
+    })
+
+    return jsonify({
+        "reply": reply,
+        "detectedSymptoms": new_symptoms,
+        "herbs": herbs_json,
+        "redFlag": red_flag,
+        "quickReplies": chat_service.quick_replies(stage, language, bool(herbs_json), bool(symptoms)),
+        "state": {"symptoms": symptoms, "conditions": conditions, "stage": stage},
+    })
+
+
+@app.route("/log-checklist", methods=["POST"])
+def post_log_checklist():
+    """Logs a "Select Your Symptoms" checklist search (the original
+    pick-from-a-list flow) to chat_logs with source="checklist", so the admin
+    Usage Reports' most-common-concerns include it. The herbs logged are the
+    same top 5 the model ranks for that selection."""
+    if not _firebase_admin_ready:
+        return jsonify({"error": "service unavailable"}), 503
+    claims = _verify_request_token()
+    if claims is None:
+        return jsonify({"error": "unauthorized"}), 401
+    data = request.get_json(force=True) or {}
+    symptoms = [s for s in data.get("symptoms", []) if s in symptom_cols][:50]
+    conditions = [c for c in data.get("conditions", []) if c in chat_service.CONDITION_IDS]
+    if not symptoms:
+        return jsonify({"error": "symptoms required"}), 400
+    herbs = _recommend_payload(symptoms, conditions, chat_service.MAX_HERBS_IN_CHAT)
+    _log_chat_turn(claims["uid"], {
+        "source": "checklist",
+        "sessionId": "",
+        "message": "",
+        "action": None,
+        "detectedSymptoms": symptoms,
+        "symptomSource": "checklist",
+        "allSymptoms": symptoms,
+        "conditions": conditions,
+        "recommendedHerbs": [h["name"] for h in herbs],
+        "mentionedHerbs": [],
+        "redFlag": False,
+        "reply": "",
+        "replySource": None,
+        "language": None,
+    })
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":

@@ -9,3 +9,4 @@ supabase
 firebase-admin
 python-dotenv
 gunicorn
+google-genai

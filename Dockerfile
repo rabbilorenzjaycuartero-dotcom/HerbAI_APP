@@ -20,4 +20,6 @@ ENV PORT=5000
 ENV PYTHONUNBUFFERED=1
 EXPOSE 5000
 
-CMD ["sh", "-c", "gunicorn api_server:app --bind 0.0.0.0:${PORT}"]
+# gthread: several requests at once in ONE process (the models load once);
+# 120 s timeout because a chatbot turn can wait on Gemini.
+CMD ["sh", "-c", "gunicorn api_server:app --bind 0.0.0.0:${PORT} --worker-class gthread --threads 4 --timeout 120"]
