@@ -35,6 +35,9 @@ Endpoints:
                             GEMINI_API_KEY in .env) only writes the reply.
                             Each turn is logged to Firestore chat_logs for
                             the admin Reports screen. See chat_service.py.
+    POST /admin/admins / DELETE /admin/admins/<uid> / POST /admin/log ->
+                            admin management (max 3, main admin protected)
+                            and the admin activity log (admin_logs).
 
 /recommend excludes herbs flagged dangerous in their Precautions text unless
 the model's relevance score clears a high confidence bar -- see
@@ -77,6 +80,7 @@ from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials as firebase_credentials
 from firebase_admin import firestore as firebase_firestore
 from firebase_admin import messaging as firebase_messaging
+import time
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 from supabase import create_client
@@ -87,6 +91,7 @@ from symptom_spelling import build_symptom_words, spelling_suggestions
 from condition_safety import get_condition_warnings
 from herb_safety import is_flagged_dangerous, DANGER_CONFIDENCE_THRESHOLD
 import chat_service
+import admin_reports
 
 load_dotenv()
 
@@ -842,6 +847,227 @@ def post_log_checklist():
         "language": None,
     })
     return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------- admins
+# Admin management (panel revision): up to MAX_ADMINS admin accounts. The
+# main admin (admins/{uid}.isMain) cannot be removed, and nobody can remove
+# themselves. Every admin action is written to admin_logs by the server, so
+# the log always records the real signed-in account.
+MAX_ADMINS = 3
+ADMIN_LOG_ACTIONS = {"open_reports", "export_pdf"}  # the ones the app may report
+_PASSWORD_SPECIAL = re.compile(r"""[!@#$%^&*(),.?":{}|<>_\-+=~`\[\];'/\\]""")
+
+
+def _require_admin():
+    """(claims, admin_doc_dict) for a signed-in admin, or (None, error_response)."""
+    if not _firebase_admin_ready or firestore_db is None:
+        return None, (jsonify({"error": "service unavailable"}), 503)
+    claims = _verify_request_token()
+    if claims is None:
+        return None, (jsonify({"error": "unauthorized"}), 401)
+    doc = firestore_db.collection("admins").document(claims["uid"]).get()
+    if not doc.exists:
+        return None, (jsonify({"error": "admins only"}), 403)
+    return claims, doc.to_dict() or {}
+
+
+def _write_admin_log(claims, action, **details):
+    try:
+        actor = firebase_auth.get_user(claims["uid"])
+        firestore_db.collection("admin_logs").add({
+            "action": action,
+            "actorUid": claims["uid"],
+            "actorEmail": actor.email or "",
+            "actorName": actor.display_name or "",
+            "details": details,
+            "createdAt": firebase_firestore.SERVER_TIMESTAMP,
+        })
+    except Exception as error:
+        print(f"WARNING: failed to write admin log ({error!r}).")
+
+
+def _password_problem(password):
+    if len(password) < 12:
+        return "Password must be at least 12 characters."
+    if not re.search(r"[A-Z]", password):
+        return "Password needs an uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return "Password needs a lowercase letter."
+    if not re.search(r"[0-9]", password):
+        return "Password needs a number."
+    if not _PASSWORD_SPECIAL.search(password):
+        return "Password needs a special character."
+    return None
+
+
+@app.route("/admin/admins", methods=["POST"])
+def post_admin_create():
+    """Main admin only: creates a NEW account and makes it an admin. The new admin verifies
+    their email with the normal code flow on first sign-in and is asked for
+    age/designation by the Complete Profile screen."""
+    claims, admin = _require_admin()
+    if claims is None:
+        return admin
+    if not admin.get("isMain"):
+        return jsonify({"error": "Only the main admin can add admins."}), 403
+    data = request.get_json(force=True) or {}
+    name = re.sub(r"\s+", " ", str(data.get("name", "")).strip())
+    email = str(data.get("email", "")).strip().lower()
+    password = str(data.get("password", ""))
+
+    if len(re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ]", name)) < 2 or not re.match(r"^[A-Za-zÀ-ÖØ-öø-ÿ .'\-]+$", name):
+        return jsonify({"error": "Please enter a valid full name (letters only)."}), 400
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
+    problem = _password_problem(password)
+    if problem:
+        return jsonify({"error": problem}), 400
+
+    admins = list(firestore_db.collection("admins").stream())
+    if len(admins) >= MAX_ADMINS:
+        return jsonify({"error": f"There can be at most {MAX_ADMINS} admins. Remove one first."}), 409
+    try:
+        firebase_auth.get_user_by_email(email)
+        return jsonify({"error": "That email already has a HerbAI account."}), 409
+    except firebase_auth.UserNotFoundError:
+        pass
+
+    try:
+        user = firebase_auth.create_user(email=email, password=password, display_name=name)
+    except Exception as error:
+        print(f"WARNING: admin account creation failed ({error!r}).")
+        return jsonify({"error": "Could not create the account. Please check the details."}), 400
+
+    firestore_db.collection("admins").document(user.uid).set({
+        "email": email,
+        "name": name,
+        "isMain": False,
+        "addedByUid": claims["uid"],
+        "addedByEmail": claims.get("email", ""),
+        "createdAt": firebase_firestore.SERVER_TIMESTAMP,
+    })
+    _write_admin_log(claims, "add_admin", targetEmail=email, targetName=name)
+    return jsonify({"ok": True, "uid": user.uid})
+
+
+@app.route("/admin/admins/<uid>", methods=["DELETE"])
+def delete_admin(uid):
+    """Removes admin rights (the account itself stays as a normal user)."""
+    claims, admin = _require_admin()
+    if claims is None:
+        return admin
+    if uid == claims["uid"]:
+        return jsonify({"error": "You cannot remove yourself."}), 400
+    ref = firestore_db.collection("admins").document(uid)
+    doc = ref.get()
+    if not doc.exists:
+        return jsonify({"error": "That account is not an admin."}), 404
+    target = doc.to_dict() or {}
+    if target.get("isMain"):
+        return jsonify({"error": "The main admin cannot be removed."}), 400
+    ref.delete()
+    _write_admin_log(claims, "remove_admin", targetEmail=target.get("email", ""),
+                     targetName=target.get("name", ""))
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/log", methods=["POST"])
+def post_admin_log():
+    """Records report activity reported by the app (opening Usage Reports,
+    exporting a PDF), attributed to the verified signed-in admin."""
+    claims, admin = _require_admin()
+    if claims is None:
+        return admin
+    data = request.get_json(force=True) or {}
+    action = str(data.get("action", ""))
+    if action not in ADMIN_LOG_ACTIONS:
+        return jsonify({"error": "unknown action"}), 400
+    details = data.get("details") if isinstance(data.get("details"), dict) else {}
+    details = {str(k)[:40]: str(v)[:120] for k, v in list(details.items())[:5]}
+    _write_admin_log(claims, action, **details)
+    return jsonify({"ok": True})
+
+
+# ------------------------------------------------------- usage reports
+# Server-side Usage Reports (see admin_reports.py): the summary is computed
+# here so it stays correct with thousands of users, and the user list and
+# activity log are served in pages of 25 with search and filters. Firestore
+# reads are cached per period for REPORT_CACHE_SECONDS so paging/filtering
+# doesn't re-read everything.
+REPORT_CACHE_SECONDS = 60
+_report_cache = {}
+
+
+def _report_data(range_key):
+    range_key = range_key if range_key in admin_reports.RANGES else "30d"
+    cached = _report_cache.get(range_key)
+    if cached and time.time() - cached[0] < REPORT_CACHE_SECONDS:
+        return range_key, cached[1], cached[2]
+    users = [admin_reports.normalize_user(d.id, d.to_dict() or {})
+             for d in firestore_db.collection("users").stream()]
+    users.sort(key=lambda u: u["createdAt"] or "", reverse=True)
+    query = firestore_db.collection("chat_logs")
+    start = admin_reports.range_start(range_key)
+    if start is not None:
+        query = query.where("createdAt", ">=", start)
+    query = query.order_by("createdAt", direction=firebase_firestore.Query.DESCENDING)
+    logs = [admin_reports.normalize_log(d.id, d.to_dict() or {}) for d in query.stream()]
+    _report_cache[range_key] = (time.time(), users, logs)
+    return range_key, users, logs
+
+
+@app.route("/admin/report/summary", methods=["GET"])
+def get_report_summary():
+    claims, err = _require_admin()
+    if claims is None:
+        return err
+    range_key, users, logs = _report_data(request.args.get("range", "30d"))
+    return jsonify(admin_reports.build_summary(users, logs, range_key))
+
+
+@app.route("/admin/report/users", methods=["GET"])
+def get_report_users():
+    claims, err = _require_admin()
+    if claims is None:
+        return err
+    _, users, _ = _report_data(request.args.get("range", "30d"))
+    found = admin_reports.filter_users(
+        users, request.args.get("q", ""), request.args.get("designation", ""), request.args.get("ageGroup", ""))
+    return jsonify(admin_reports.page(found, request.args.get("offset"), request.args.get("limit")))
+
+
+@app.route("/admin/report/logs", methods=["GET"])
+def get_report_logs():
+    claims, err = _require_admin()
+    if claims is None:
+        return err
+    _, _, logs = _report_data(request.args.get("range", "30d"))
+    # Quick-reply taps ("That's all", conditions) have no typed message.
+    activity = [l for l in logs if l["source"] == "checklist" or l["message"]]
+    found = admin_reports.filter_logs(
+        activity, request.args.get("q", ""), request.args.get("source", ""),
+        request.args.get("designation", ""), request.args.get("symptom", ""))
+    return jsonify(admin_reports.page(found, request.args.get("offset"), request.args.get("limit")))
+
+
+@app.route("/admin/report/export.xlsx", methods=["GET"])
+def get_report_xlsx():
+    claims, err = _require_admin()
+    if claims is None:
+        return err
+    range_key, users, logs = _report_data(request.args.get("range", "30d"))
+    activity = [l for l in logs if l["source"] == "checklist" or l["message"]]
+    summary = admin_reports.build_summary(users, logs, range_key)
+    data = admin_reports.build_xlsx(summary, users, activity)
+    _write_admin_log(claims, "export_xlsx", range={"7d": "Last 7 days", "30d": "Last 30 days",
+                                                   "all": "All time"}[range_key])
+    stamp = datetime.now(admin_reports.PH_TZ).strftime("%Y-%m-%d")
+    return Response(
+        data,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="HerbAI_Usage_Data_{stamp}.xlsx"'},
+    )
 
 
 if __name__ == "__main__":

@@ -9,6 +9,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# Excel export for the admin Usage Reports. Separate layer so adding it
+# didn't invalidate the cached install of everything above.
+RUN pip install --no-cache-dir openpyxl==3.1.5
 
 COPY . .
 
