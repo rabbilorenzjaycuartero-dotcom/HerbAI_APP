@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/symptom_provider.dart';
-import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/loading_widget.dart';
-import '../widgets/decorative_blobs.dart';
+import '../widgets/step_header.dart';
 import '../core/app_theme.dart';
 import '../core/context_extensions.dart';
 import '../models/plant_model.dart';
@@ -30,94 +29,83 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: context.tr('select_your_symptoms'),
-        onBackPressed: () => context.go('/'),
-      ),
-      body: Stack(
+      backgroundColor: AppTheme.background,
+      body: Column(
         children: [
-          const DecorativeBlobs(),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(context),
-                _buildSearchBar(context),
-                _buildSelectedSymptoms(),
-                Expanded(child: _buildSymptomsList()),
-                _buildBottomButton(),
-              ],
-            ),
+          StepHeader(
+            step: 1,
+            totalSteps: 2,
+            title: context.tr('what_symptoms_experiencing'),
+            subtitle: context.tr('choose_all_symptoms'),
+            onBack: () => context.go('/'),
+            bottomPadding: 60,
+            compact: MediaQuery.viewInsetsOf(context).bottom > 0,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.tr('what_symptoms_experiencing'),
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
+          Transform.translate(
+            offset: const Offset(0, -30),
+            child: _buildSearchBar(context),
           ),
-          const SizedBox(height: 8),
-          Text(
-            context.tr('choose_all_symptoms'),
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 15,
-              height: 1.4,
-            ),
+          Transform.translate(
+            offset: const Offset(0, -22),
+            child: _buildSelectedSymptoms(),
           ),
+          Expanded(child: _buildSymptomsList()),
+          _buildBottomButton(),
         ],
       ),
     );
   }
 
   Widget _buildSearchBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value.toLowerCase();
-          });
-        },
-        decoration: InputDecoration(
-          hintText: context.tr('search_symptoms_hint'),
-          hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.6)),
-          prefixIcon: Icon(Icons.search_rounded, color: AppTheme.textSecondary),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear_rounded, color: AppTheme.textSecondary),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                    });
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: AppTheme.surface,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: AppTheme.primary, width: 2.0),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
+        color: AppTheme.background,
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(18),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value.toLowerCase();
+            });
+          },
+          decoration: InputDecoration(
+            hintText: context.tr('search_symptoms_hint'),
+            hintStyle: TextStyle(
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            ),
+            prefixIcon: Icon(Icons.search_rounded, color: AppTheme.primary),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.clear_rounded,
+                      color: AppTheme.textSecondary,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: AppTheme.background,
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+            ),
           ),
         ),
       ),
@@ -130,58 +118,68 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
         if (provider.selectedSymptoms.isEmpty) {
           return const SizedBox.shrink();
         }
-
-        return Container(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(
-                    context.tr('selected_symptoms'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${provider.selectedSymptoms.length}',
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      context.tr('selected_symptoms'),
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Wrap(
-                  key: ValueKey(provider.selectedSymptoms.length),
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: provider.selectedSymptoms
-                      .map(
-                        (symptom) => _SelectedSymptomChip(
-                          key: ValueKey(symptom.id),
-                          symptom: symptom,
-                          onRemove: () => provider.toggleSymptom(symptom),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${provider.selectedSymptoms.length}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: provider.clearSymptoms,
+                      child: Text(context.tr('clear_all')),
+                    ),
+                  ],
                 ),
               ),
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: provider.selectedSymptoms.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final symptom = provider.selectedSymptoms[index];
+                    return _SelectedSymptomChip(
+                      key: ValueKey(symptom.id),
+                      symptom: symptom,
+                      onRemove: () => provider.toggleSymptom(symptom),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -203,19 +201,19 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
         }
 
         return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
-            if (_searchQuery.isNotEmpty) ...[
-              Text(
-                context.tr('search_results'),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 12),
+              child: Text(
+                '${context.tr(_searchQuery.isNotEmpty ? 'search_results' : 'all_symptoms')} (${filteredSymptoms.length})',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 12),
-            ],
+            ),
             Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -283,28 +281,17 @@ class _SymptomSelectionScreenState extends State<SymptomSelectionScreen> {
   Widget _buildBottomButton() {
     return Consumer<SymptomProvider>(
       builder: (context, provider, child) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppTheme.background,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: CustomButton(
-              text: context.tr('continue_label'),
-              onPressed: provider.hasSelectedSymptoms
-                  ? () {
-                      context.push('/health-check');
-                    }
-                  : null,
-              borderRadius: 30,
-            ),
+        final count = provider.selectedSymptoms.length;
+        return StepBottomBar(
+          child: CustomButton(
+            text: count > 0
+                ? '${context.tr('continue_label')} ($count)'
+                : context.tr('continue_label'),
+            icon: Icons.arrow_forward_rounded,
+            onPressed: provider.hasSelectedSymptoms
+                ? () => context.push('/health-check')
+                : null,
+            borderRadius: 30,
           ),
         );
       },
@@ -326,44 +313,34 @@ class _SelectedSymptomChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       constraints: const BoxConstraints(maxWidth: 220),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.1),
+        color: AppTheme.primary,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.primary.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.check_circle_rounded,
-            size: 18,
-            color: AppTheme.primary,
-          ),
-          const SizedBox(width: 6),
           Flexible(
             child: Text(
               symptom.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
+              style: const TextStyle(
+                fontSize: 13.5,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.primary,
+                color: Colors.white,
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           GestureDetector(
             onTap: onRemove,
-            child: Icon(
+            child: const Icon(
               Icons.close_rounded,
-              size: 18,
-              color: AppTheme.primary,
+              size: 17,
+              color: Colors.white,
             ),
           ),
         ],
@@ -420,7 +397,9 @@ class _SymptomChip extends StatelessWidget {
                         : Icons.radio_button_unchecked_rounded,
                     key: ValueKey(isSelected),
                     size: 20,
-                    color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+                    color: isSelected
+                        ? AppTheme.primary
+                        : AppTheme.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -431,8 +410,12 @@ class _SymptomChip extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppTheme.primary
+                          : AppTheme.textPrimary,
                     ),
                   ),
                 ),

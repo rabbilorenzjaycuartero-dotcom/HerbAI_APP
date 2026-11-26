@@ -17,6 +17,8 @@ import '../screens/symptom_selection_screen.dart';
 import '../screens/health_check_screen.dart';
 import '../screens/complete_profile_screen.dart';
 import '../screens/admin_reports_screen.dart';
+import '../screens/manage_admins_screen.dart';
+import '../screens/admin_activity_screen.dart';
 import '../screens/recommendation_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/reset_password_success_screen.dart';
@@ -73,7 +75,7 @@ final GoRouter router = GoRouter(
     if (userProfileStore.needsProfile) {
       return state.matchedLocation == '/complete-profile' ? null : '/complete-profile';
     }
-    if (state.matchedLocation == '/admin/reports' && !userProfileStore.isAdmin) {
+    if (state.matchedLocation.startsWith('/admin') && !userProfileStore.isAdmin) {
       return '/';
     }
 
@@ -144,6 +146,16 @@ final GoRouter router = GoRouter(
       path: '/admin/reports',
       name: 'admin-reports',
       builder: (context, state) => const AdminReportsScreen(),
+    ),
+    GoRoute(
+      path: '/admin/admins',
+      name: 'admin-admins',
+      builder: (context, state) => const ManageAdminsScreen(),
+    ),
+    GoRoute(
+      path: '/admin/activity',
+      name: 'admin-activity',
+      builder: (context, state) => const AdminActivityScreen(),
     ),
     GoRoute(
       path: '/recommendations',

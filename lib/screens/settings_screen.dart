@@ -72,6 +72,16 @@ class SettingsScreen extends StatelessWidget {
                       title: context.tr('reports_title'),
                       onTap: () => context.push('/admin/reports'),
                     ),
+                    _buildMenuTile(
+                      icon: Icons.admin_panel_settings_outlined,
+                      title: context.tr('manage_admins'),
+                      onTap: () => context.push('/admin/admins'),
+                    ),
+                    _buildMenuTile(
+                      icon: Icons.history_rounded,
+                      title: context.tr('admin_activity_log'),
+                      onTap: () => context.push('/admin/activity'),
+                    ),
                   ],
                 );
               },

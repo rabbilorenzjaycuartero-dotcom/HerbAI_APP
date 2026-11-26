@@ -26,12 +26,18 @@ class DohApprovedBadge extends StatelessWidget {
             child: Icon(Icons.check_rounded, size: size * 0.7, color: Colors.white),
           ),
           const SizedBox(width: 4),
-          Text(
-            '(Clinically Approved)',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.green.shade700,
+          // Flexible + ellipsis so the badge shrinks instead of overflowing
+          // when it shares a row with other info (e.g. Recommend cards).
+          Flexible(
+            child: Text(
+              '(Clinically Approved)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.green.shade700,
+              ),
             ),
           ),
         ],

@@ -4,12 +4,10 @@ import '../core/app_theme.dart';
 import '../core/context_extensions.dart';
 import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
-import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/auth_scaffold.dart';
 import '../widgets/custom_textfield.dart';
-import '../widgets/app_logo.dart';
 import '../utils/name_input.dart';
-import '../widgets/decorative_blobs.dart';
 import '../widgets/demographics_fields.dart';
 import '../providers/user_profile_store.dart';
 
@@ -23,8 +21,9 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  static final RegExp _specialCharacterPattern =
-      RegExp(r'''[!@#$%^&*(),.?":{}|<>_\-+=~`\[\];'/\\]''');
+  static final RegExp _specialCharacterPattern = RegExp(
+    r'''[!@#$%^&*(),.?":{}|<>_\-+=~`\[\];'/\\]''',
+  );
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -104,7 +103,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
       );
 
-      debugPrint('Register successful for $email, user: ${user.email}, verified: ${user.emailVerified}');
+      debugPrint(
+        'Register successful for $email, user: ${user.email}, verified: ${user.emailVerified}',
+      );
 
       // Age/designation for the admin usage reports (panel revision). If
       // this write fails, the Complete Profile screen asks again later.
@@ -144,227 +145,209 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: const CustomAppBar(),
-      body: Stack(
-        children: [
-          const DecorativeBlobs(),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return AuthScaffold(
+      title: context.tr('create_account'),
+      subtitle: context.tr('create_simple_account'),
+      onBack: () => context.go('/login'),
+      footer: Center(
+        child: TextButton(
+          onPressed: () => context.go('/login'),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: context.tr('already_have_account_q')),
+                TextSpan(
+                  text: context.tr('sign_in'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomTextField(
+              hintText: context.tr('full_name_hint'),
+              controller: _nameController,
+              prefixIcon: const Icon(Icons.person_outlined),
+              textCapitalization: TextCapitalization.words,
+              inputFormatters: nameInputFormatters,
+              validator: (value) => validateName(value, context),
+            ),
+            const SizedBox(height: 16),
+            DemographicsFields(controller: _demographics, enabled: !_isLoading),
+            const SizedBox(height: 16),
+            CustomTextField(
+              hintText: context.tr('email_hint'),
+              controller: _emailController,
+              focusNode: _emailFocusNode,
+              keyboardType: TextInputType.emailAddress,
+              prefixIcon: const Icon(Icons.email_outlined),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return context.trRead('please_enter_email');
+                }
+                if (!_emailFormatPattern.hasMatch(value)) {
+                  return context.trRead('please_enter_valid_email');
+                }
+                if (_emailExists == true) {
+                  return context.trRead('email_already_registered');
+                }
+                return null;
+              },
+              onChanged: (_) => setState(() => _emailExists = null),
+            ),
+            if (_isCheckingEmail)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  context.tr('checking_email'),
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              )
+            else if (_emailExists == true)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
                   children: [
-                    const SizedBox(height: 8),
-                    const Center(child: AppLogo(size: 96)),
-                    const SizedBox(height: 20),
-                    Text(
-                      context.tr('create_account'),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 16,
+                      color: Colors.red,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.tr('create_simple_account'),
-                      style: TextStyle(color: AppTheme.textSecondary),
-                    ),
-                    const SizedBox(height: 36),
-                    CustomTextField(
-                      hintText: context.tr('full_name_hint'),
-                      controller: _nameController,
-                      prefixIcon: const Icon(Icons.person_outlined),
-                      textCapitalization: TextCapitalization.words,
-                      inputFormatters: nameInputFormatters,
-                      validator: (value) => validateName(value, context),
-                    ),
-                    const SizedBox(height: 16),
-                    DemographicsFields(controller: _demographics, enabled: !_isLoading),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  hintText: context.tr('email_hint'),
-                  controller: _emailController,
-                  focusNode: _emailFocusNode,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return context.trRead('please_enter_email');
-                    }
-                    if (!_emailFormatPattern.hasMatch(value)) {
-                      return context.trRead('please_enter_valid_email');
-                    }
-                    if (_emailExists == true) {
-                      return context.trRead('email_already_registered');
-                    }
-                    return null;
-                  },
-                  onChanged: (_) => setState(() => _emailExists = null),
-                ),
-                if (_isCheckingEmail)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      context.tr('checking_email'),
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                    ),
-                  )
-                else if (_emailExists == true)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, size: 16, color: Colors.red),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            context.tr('email_already_registered'),
-                            style: TextStyle(fontSize: 12, color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  hintText: context.tr('password_hint'),
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  prefixIcon: const Icon(Icons.lock_outlined),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.trRead('please_enter_password');
-                    }
-                    if (value.length < 12) {
-                      return context.trRead('password_min_length');
-                    }
-                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return context.trRead('password_needs_uppercase');
-                    }
-                    if (!RegExp(r'[a-z]').hasMatch(value)) {
-                      return context.trRead('password_needs_lowercase');
-                    }
-                    if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return context.trRead('password_needs_number');
-                    }
-                    if (!_specialCharacterPattern.hasMatch(value)) {
-                      return context.trRead('password_needs_special');
-                    }
-                    return null;
-                  },
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 8),
-                _buildRequirementRow(
-                  context.tr('req_12_characters'),
-                  _passwordController.text.length >= 12,
-                ),
-                _buildRequirementRow(
-                  context.tr('req_uppercase'),
-                  RegExp(r'[A-Z]').hasMatch(_passwordController.text),
-                ),
-                _buildRequirementRow(
-                  context.tr('req_lowercase'),
-                  RegExp(r'[a-z]').hasMatch(_passwordController.text),
-                ),
-                _buildRequirementRow(
-                  context.tr('req_number'),
-                  RegExp(r'[0-9]').hasMatch(_passwordController.text),
-                ),
-                _buildRequirementRow(
-                  context.tr('req_special_char'),
-                  _specialCharacterPattern.hasMatch(_passwordController.text),
-                ),
-                const SizedBox(height: 8),
-                CustomTextField(
-                  hintText: context.tr('confirm_password_hint'),
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  prefixIcon: const Icon(Icons.lock_outlined),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
-                    },
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return context.trRead('please_confirm_password');
-                    }
-                    if (value != _passwordController.text) {
-                      return context.trRead('passwords_do_not_match');
-                    }
-                    return null;
-                  },
-                  onChanged: (_) => setState(() {}),
-                ),
-                if (_confirmPasswordController.text.isNotEmpty)
-                  _buildConfirmPasswordStatus(context),
-                    const SizedBox(height: 16),
-                    Text(
-                      context.tr('data_collection_notice'),
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, height: 1.4),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CustomButton(
-                        text: context.tr('create_account'),
-                        onPressed: _isLoading ? null : _handleRegister,
-                        isLoading: _isLoading,
-                        borderRadius: 30,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: TextButton(
-                        onPressed: () => context.go('/login'),
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(text: context.tr('already_have_account_q')),
-                              TextSpan(
-                                text: context.tr('sign_in'),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        context.tr('email_already_registered'),
+                        style: TextStyle(fontSize: 12, color: Colors.red),
                       ),
                     ),
                   ],
                 ),
               ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              hintText: context.tr('password_hint'),
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              prefixIcon: const Icon(Icons.lock_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () {
+                  setState(() => _obscurePassword = !_obscurePassword);
+                },
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return context.trRead('please_enter_password');
+                }
+                if (value.length < 12) {
+                  return context.trRead('password_min_length');
+                }
+                if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                  return context.trRead('password_needs_uppercase');
+                }
+                if (!RegExp(r'[a-z]').hasMatch(value)) {
+                  return context.trRead('password_needs_lowercase');
+                }
+                if (!RegExp(r'[0-9]').hasMatch(value)) {
+                  return context.trRead('password_needs_number');
+                }
+                if (!_specialCharacterPattern.hasMatch(value)) {
+                  return context.trRead('password_needs_special');
+                }
+                return null;
+              },
+              onChanged: (_) => setState(() {}),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            _buildRequirementRow(
+              context.tr('req_12_characters'),
+              _passwordController.text.length >= 12,
+            ),
+            _buildRequirementRow(
+              context.tr('req_uppercase'),
+              RegExp(r'[A-Z]').hasMatch(_passwordController.text),
+            ),
+            _buildRequirementRow(
+              context.tr('req_lowercase'),
+              RegExp(r'[a-z]').hasMatch(_passwordController.text),
+            ),
+            _buildRequirementRow(
+              context.tr('req_number'),
+              RegExp(r'[0-9]').hasMatch(_passwordController.text),
+            ),
+            _buildRequirementRow(
+              context.tr('req_special_char'),
+              _specialCharacterPattern.hasMatch(_passwordController.text),
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(
+              hintText: context.tr('confirm_password_hint'),
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirmPassword,
+              prefixIcon: const Icon(Icons.lock_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () {
+                  setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  );
+                },
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return context.trRead('please_confirm_password');
+                }
+                if (value != _passwordController.text) {
+                  return context.trRead('passwords_do_not_match');
+                }
+                return null;
+              },
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_confirmPasswordController.text.isNotEmpty)
+              _buildConfirmPasswordStatus(context),
+            const SizedBox(height: 16),
+            Text(
+              context.tr('data_collection_notice'),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: CustomButton(
+                text: context.tr('create_account'),
+                onPressed: _isLoading ? null : _handleRegister,
+                isLoading: _isLoading,
+                borderRadius: 30,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -405,7 +388,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            matches ? context.tr('passwords_match') : context.tr('passwords_do_not_match'),
+            matches
+                ? context.tr('passwords_match')
+                : context.tr('passwords_do_not_match'),
             style: TextStyle(
               fontSize: 12,
               color: matches ? Colors.green : Colors.red,

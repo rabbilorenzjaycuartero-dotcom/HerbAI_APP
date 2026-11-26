@@ -6,11 +6,9 @@ import '../core/context_extensions.dart';
 import '../services/api_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/local_auth_service.dart';
-import '../widgets/custom_appbar.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/auth_scaffold.dart';
 import '../widgets/custom_textfield.dart';
-import '../widgets/app_logo.dart';
-import '../widgets/decorative_blobs.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,7 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLocked = true;
       _bannerIsLockout = true;
       _remainingLockoutSeconds = seconds;
-      _bannerMessage = '${context.trRead('too_many_attempts_prefix')} ${seconds}s.';
+      _bannerMessage =
+          '${context.trRead('too_many_attempts_prefix')} ${seconds}s.';
     });
     _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -82,7 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
           _bannerMessage = null;
           timer.cancel();
         } else {
-          _bannerMessage = '${context.trRead('too_many_attempts_prefix')} ${_remainingLockoutSeconds}s.';
+          _bannerMessage =
+              '${context.trRead('too_many_attempts_prefix')} ${_remainingLockoutSeconds}s.';
         }
       });
     });
@@ -96,13 +96,21 @@ class _LoginScreenState extends State<LoginScreen> {
   /// /check-email. This is a deliberate trade of a slice of that
   /// protection for a clearer message, same choice already made for the
   /// Register screen's "email already registered" hint.
-  Future<String> _describeLoginFailure(Object error, String lockoutEmail) async {
+  Future<String> _describeLoginFailure(
+    Object error,
+    String lockoutEmail,
+  ) async {
     // Normalized because the exact code string varies by platform -- e.g.
     // Android's native SDK returns "ERROR_INVALID_CREDENTIAL" (confirmed by
     // testing on-device) where iOS/other platforms return the lowercase
     // "invalid-credential" the rest of this app's code assumes elsewhere.
-    final code = FirebaseAuthService.errorCode(error)?.toLowerCase().replaceAll('_', '-') ?? '';
-    final isCredentialMismatch = code.contains('invalid-credential') ||
+    final code =
+        FirebaseAuthService.errorCode(
+          error,
+        )?.toLowerCase().replaceAll('_', '-') ??
+        '';
+    final isCredentialMismatch =
+        code.contains('invalid-credential') ||
         code.contains('wrong-password') ||
         code.contains('user-not-found');
     if (!isCredentialMismatch) {
@@ -125,7 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_isLoading || _isLocked || !(_formKey.currentState?.validate() ?? false)) {
+    if (_isLoading ||
+        _isLocked ||
+        !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -195,9 +205,13 @@ class _LoginScreenState extends State<LoginScreen> {
       await LocalAuthService.saveRememberMe(_rememberMe, email);
 
       final refreshedUser = await FirebaseAuthService.refreshCurrentUser();
-      debugPrint('User refreshed: ${refreshedUser?.email}, verified: ${refreshedUser?.emailVerified}');
+      debugPrint(
+        'User refreshed: ${refreshedUser?.email}, verified: ${refreshedUser?.emailVerified}',
+      );
     } catch (e, stackTrace) {
-      debugPrint('Post-login housekeeping failed (non-fatal, user is still signed in): $e');
+      debugPrint(
+        'Post-login housekeeping failed (non-fatal, user is still signed in): $e',
+      );
       debugPrintStack(stackTrace: stackTrace);
     }
 
@@ -209,139 +223,110 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppTheme.background,
-        appBar: const CustomAppBar(showBackButton: false),
-        body: Stack(
+    return AuthScaffold(
+      title: context.tr('welcome_back'),
+      subtitle: context.tr('sign_in_to_continue'),
+      overlays: [_buildTopBanner()],
+      footer: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              context.tr('no_account_q'),
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+          const SizedBox(width: 4),
+          TextButton(
+            onPressed: () => context.go('/register'),
+            child: Text(
+              context.tr('sign_up'),
+              style: TextStyle(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const DecorativeBlobs(),
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-                      const Center(child: AppLogo(size: 96)),
-                      const SizedBox(height: 24),
-                      Text(
-                        context.tr('welcome_back'),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.tr('sign_in_to_continue'),
-                    style: TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 36),
-                  CustomTextField(
-                    hintText: context.tr('email_hint'),
-                    controller: _emailController,
-                    enabled: !_isLocked,
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return context.trRead('please_enter_email');
-                      }
-                      if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
-                        return context.trRead('please_enter_valid_email');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    hintText: context.tr('password_hint'),
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    enabled: !_isLocked,
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: _isLocked
-                          ? null
-                          : () {
-                              setState(() => _obscurePassword = !_obscurePassword);
-                            },
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return context.trRead('please_enter_password');
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  CheckboxListTile(
-                    value: _rememberMe,
-                    onChanged: _isLoading
-                        ? null
-                        : (value) => setState(() => _rememberMe = value ?? false),
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(context.tr('remember_email_device')),
-                  ),
-                  if (_failedAttemptCount >= 2)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => context.push('/forgot-password'),
-                        child: Text(
-                          context.tr('forgot_password_q'),
-                          style: TextStyle(color: AppTheme.primary),
-                        ),
-                      ),
-                    ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: CustomButton(
-                          text: context.tr('sign_in'),
-                          onPressed: (_isLoading || _isLocked) ? null : _handleLogin,
-                          isLoading: _isLoading,
-                          borderRadius: 30,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              context.tr('no_account_q'),
-                              style: TextStyle(color: AppTheme.textSecondary),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          TextButton(
-                            onPressed: () => context.go('/register'),
-                            child: Text(
-                              context.tr('sign_up'),
-                              style: TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+            CustomTextField(
+              hintText: context.tr('email_hint'),
+              controller: _emailController,
+              enabled: !_isLocked,
+              keyboardType: TextInputType.emailAddress,
+              prefixIcon: const Icon(Icons.email_outlined),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return context.trRead('please_enter_email');
+                }
+                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                  return context.trRead('please_enter_valid_email');
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              hintText: context.tr('password_hint'),
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              enabled: !_isLocked,
+              prefixIcon: const Icon(Icons.lock_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: _isLocked
+                    ? null
+                    : () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return context.trRead('please_enter_password');
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              value: _rememberMe,
+              onChanged: _isLoading
+                  ? null
+                  : (value) => setState(() => _rememberMe = value ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.tr('remember_email_device')),
+            ),
+            if (_failedAttemptCount >= 2)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => context.push('/forgot-password'),
+                  child: Text(
+                    context.tr('forgot_password_q'),
+                    style: TextStyle(color: AppTheme.primary),
                   ),
                 ),
               ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: CustomButton(
+                text: context.tr('sign_in'),
+                onPressed: (_isLoading || _isLocked) ? null : _handleLogin,
+                isLoading: _isLoading,
+                borderRadius: 30,
+              ),
             ),
-            _buildTopBanner(),
           ],
         ),
       ),
@@ -364,14 +349,19 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               children: [
                 Icon(
-                  _bannerIsLockout ? Icons.lock_clock : Icons.warning_amber_rounded,
+                  _bannerIsLockout
+                      ? Icons.lock_clock
+                      : Icons.warning_amber_rounded,
                   color: Colors.white,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _bannerMessage!,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

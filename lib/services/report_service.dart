@@ -1,208 +1,134 @@
-import 'dart:typed_data';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../core/app_constants.dart';
+import 'firebase_auth_service.dart';
 
-/// Admin usage reports (panel revision): who uses HerbAI (age, designation)
-/// and what they ask the chatbot (top symptom concerns, typed words).
-/// Data: users/{uid} profiles and chat_logs written by the /chat endpoint.
+/// Admin usage reports (panel revision). The SERVER computes the summary and
+/// serves the user list / activity log in pages of 25 (see admin_reports.py),
+/// so the numbers stay correct with thousands of users. This service calls
+/// those endpoints, builds the PDF summary, and downloads the Excel export.
 
 enum ReportRange { last7Days, last30Days, allTime }
 
+class CountRow {
+  final String label;
+  final int count;
+  const CountRow(this.label, this.count);
+
+  static List<CountRow> listFrom(Object? json) => ((json as List<dynamic>?) ?? [])
+      .map((e) => CountRow((e as Map<String, dynamic>)['label'] as String, (e['count'] as num).toInt()))
+      .toList();
+}
+
+class GroupTop {
+  final String group;
+  final List<CountRow> top;
+  const GroupTop(this.group, this.top);
+
+  static List<GroupTop> listFrom(Object? json) => ((json as List<dynamic>?) ?? [])
+      .map((e) => GroupTop((e as Map<String, dynamic>)['group'] as String, CountRow.listFrom(e['top'])))
+      .toList();
+}
+
+class TrendPoint {
+  final String label;
+  final int chatbot;
+  final int checklist;
+  const TrendPoint(this.label, this.chatbot, this.checklist);
+  int get total => chatbot + checklist;
+}
+
+class ReportSummary {
+  final ReportRange range;
+  final DateTime generatedAt;
+  final int registeredUsers;
+  final int activeUsers;
+  final int chatMessages;
+  final int checklistSearches;
+  final List<TrendPoint> trend;
+  final List<CountRow> usersByDesignation;
+  final List<CountRow> usersByAgeGroup;
+  final List<CountRow> topConcerns;
+  final List<GroupTop> concernsByDesignation;
+  final List<GroupTop> concernsByAgeGroup;
+  final List<CountRow> topWords;
+  final List<CountRow> topHerbs;
+
+  ReportSummary.fromJson(this.range, Map<String, dynamic> json)
+      : generatedAt = DateTime.tryParse(json['generatedAt'] as String? ?? '')?.toLocal() ?? DateTime.now(),
+        registeredUsers = (json['totals']['registeredUsers'] as num).toInt(),
+        activeUsers = (json['totals']['activeUsers'] as num).toInt(),
+        chatMessages = (json['totals']['chatMessages'] as num).toInt(),
+        checklistSearches = (json['totals']['checklistSearches'] as num).toInt(),
+        trend = ((json['trend'] as List<dynamic>?) ?? [])
+            .map((e) => TrendPoint(e['label'] as String, (e['chatbot'] as num).toInt(), (e['checklist'] as num).toInt()))
+            .toList(),
+        usersByDesignation = CountRow.listFrom(json['usersByDesignation']),
+        usersByAgeGroup = CountRow.listFrom(json['usersByAgeGroup']),
+        topConcerns = CountRow.listFrom(json['topConcerns']),
+        concernsByDesignation = GroupTop.listFrom(json['concernsByDesignation']),
+        concernsByAgeGroup = GroupTop.listFrom(json['concernsByAgeGroup']),
+        topWords = CountRow.listFrom(json['topWords']),
+        topHerbs = CountRow.listFrom(json['topHerbs']);
+
+  int get concernTotal => topConcerns.fold(0, (n, r) => n + r.count);
+}
+
 class ReportUser {
   final String name;
+  final String email;
   final int? age;
+  final String ageGroup;
   final String designation;
   final DateTime? createdAt;
-  const ReportUser({required this.name, this.age, required this.designation, this.createdAt});
+
+  ReportUser.fromJson(Map<String, dynamic> j)
+      : name = (j['name'] as String?) ?? '',
+        email = (j['email'] as String?) ?? '',
+        age = (j['age'] as num?)?.toInt(),
+        ageGroup = (j['ageGroup'] as String?) ?? '',
+        designation = (j['designation'] as String?) ?? 'Not specified',
+        createdAt = DateTime.tryParse(j['createdAt'] as String? ?? '')?.toLocal();
 }
 
 class ReportLog {
-  final DateTime? createdAt;
-  final String uid;
+  final String source;
   final String userName;
   final int? age;
   final String designation;
   final String message;
   final List<String> detectedSymptoms;
   final List<String> recommendedHerbs;
-  // 'chatbot' or 'checklist' (Select Your Symptoms). Logs written before
-  // this field existed are all chatbot turns.
-  final String source;
-  const ReportLog({
-    this.createdAt,
-    required this.uid,
-    required this.userName,
-    this.age,
-    required this.designation,
-    required this.message,
-    required this.detectedSymptoms,
-    required this.recommendedHerbs,
-    this.source = 'chatbot',
-  });
+  final DateTime? createdAt;
+
+  ReportLog.fromJson(Map<String, dynamic> j)
+      : source = (j['source'] as String?) ?? 'chatbot',
+        userName = (j['userName'] as String?) ?? '',
+        age = (j['age'] as num?)?.toInt(),
+        designation = (j['designation'] as String?) ?? 'Not specified',
+        message = (j['message'] as String?) ?? '',
+        detectedSymptoms = ((j['detectedSymptoms'] as List<dynamic>?) ?? []).map((e) => '$e').toList(),
+        recommendedHerbs = ((j['recommendedHerbs'] as List<dynamic>?) ?? []).map((e) => '$e').toList(),
+        createdAt = DateTime.tryParse(j['createdAt'] as String? ?? '')?.toLocal();
 }
 
-class UsageReport {
-  final ReportRange range;
-  final DateTime generatedAt;
-  final List<ReportUser> users;
-  final List<ReportLog> logs;
-
-  UsageReport({required this.range, required this.generatedAt, required this.users, required this.logs});
-
-  static const ageGroups = ['17 and below', '18-24', '25-34', '35-44', '45-59', '60 and above', 'Not specified'];
-
-  static String ageGroup(int? age) {
-    if (age == null) return 'Not specified';
-    if (age <= 17) return '17 and below';
-    if (age <= 24) return '18-24';
-    if (age <= 34) return '25-34';
-    if (age <= 44) return '35-44';
-    if (age <= 59) return '45-59';
-    return '60 and above';
-  }
-
-  static String designationGroup(String designation) =>
-      designation.startsWith('Others') ? 'Others' : designation;
-
-  /// Ordered (label, count) pairs, largest first.
-  static List<MapEntry<String, int>> _sorted(Map<String, int> counts, {int? limit}) {
-    final list = counts.entries.toList()
-      ..sort((a, b) => b.value != a.value ? b.value.compareTo(a.value) : a.key.compareTo(b.key));
-    return limit == null ? list : list.take(limit).toList();
-  }
-
-  Map<String, int> _count(Iterable<String> items) {
-    final out = <String, int>{};
-    for (final item in items) {
-      out[item] = (out[item] ?? 0) + 1;
-    }
-    return out;
-  }
-
-  List<MapEntry<String, int>> get usersByDesignation =>
-      _sorted(_count(users.map((u) => designationGroup(u.designation))));
-
-  List<MapEntry<String, int>> get usersByAgeGroup {
-    final counts = _count(users.map((u) => ageGroup(u.age)));
-    return [for (final g in ageGroups) if (counts.containsKey(g)) MapEntry(g, counts[g]!)];
-  }
-
-  List<ReportLog> get messageLogs => logs.where((l) => l.message.isNotEmpty).toList();
-
-  int get activeUsers => logs.map((l) => l.uid).toSet().length;
-
-  List<ReportLog> get checklistLogs => logs.where((l) => l.source == 'checklist').toList();
-  List<ReportLog> get chatbotLogs => logs.where((l) => l.source != 'checklist').toList();
-
-  List<MapEntry<String, int>> topConcerns({int limit = 10}) =>
-      _sorted(_count(logs.expand((l) => l.detectedSymptoms)), limit: limit);
-
-  List<MapEntry<String, int>> topHerbs({int limit = 10}) =>
-      _sorted(_count(logs.expand((l) => l.recommendedHerbs)), limit: limit);
-
-  /// Top concerns per group (designation or age group).
-  Map<String, List<MapEntry<String, int>>> concernsBy(String Function(ReportLog) group, {int limit = 3}) {
-    final buckets = <String, Map<String, int>>{};
-    for (final log in logs) {
-      final bucket = buckets.putIfAbsent(group(log), () => {});
-      for (final s in log.detectedSymptoms) {
-        bucket[s] = (bucket[s] ?? 0) + 1;
-      }
-    }
-    final out = <String, List<MapEntry<String, int>>>{};
-    for (final entry in buckets.entries) {
-      if (entry.value.isNotEmpty) out[entry.key] = _sorted(entry.value, limit: limit);
-    }
-    return out;
-  }
-
-  Map<String, List<MapEntry<String, int>>> get concernsByDesignation =>
-      concernsBy((l) => designationGroup(l.designation));
-
-  Map<String, List<MapEntry<String, int>>> get concernsByAgeGroup => concernsBy((l) => ageGroup(l.age));
-
-  static const _stopwords = {
-    // English
-    'i', 'im', "i'm", 'ive', 'a', 'an', 'the', 'and', 'or', 'my', 'is', 'am', 'are', 'was', 'me', 'of', 'to',
-    'in', 'on', 'for', 'with', 'it', 'also', 'so', 'very', 'really', 'feel', 'feeling', 'been', 'have', 'has',
-    'had', 'since', 'what', 'how', 'can', 'do', 'does', 'please', 'some', 'that', 'this', 'there', 'be', 'but',
-    'just', 'today', 'now', 'lately', 'little', 'bit', 'any', 'herb', 'herbs', 'good', 'help', 'need', 'want',
-    // Bisaya
-    'naa', 'ko', 'koy', 'kog', 'ako', 'akong', 'ang', 'sa', 'ug', 'og', 'nga', 'man', 'kaayo', 'karon', 'unsa',
-    'unsaon', 'pa', 'na', 'lang', 'ra', 'kay', 'mao', 'kini', 'ni', 'ana', 'gyud', 'jud', 'wala', 'dili', 'nako',
-    'nimo', 'pod', 'pud', 'sad', 'usab', 'unta', 'diay', 'bitaw', 'si', 'ka', 'mo', 'ta', 'ba', 'tungod', 'kung',
-    'para', 'maayo', 'tambal', 'gibati', 'akoa', 'nag', 'naay', 'kahibalo',
-    // Tagalog
-    'may', 'ng', 'at', 'mga', 'ay', 'po', 'din', 'rin', 'ito', 'yung', 'kasi', 'akin',
-    'ano', 'nang', 'pero', 'lagi', 'sobra', 'masyado', 'ngayon', 'yun', 'gamot', 'mabuti',
-  };
-
-  List<MapEntry<String, int>> topWords({int limit = 15}) {
-    final words = messageLogs
-        .expand((l) => l.message.toLowerCase().split(RegExp(r"[^a-zA-ZÀ-ÿñÑ'\-]+")))
-        .map((w) => w.replaceAll(RegExp(r"^['\-]+|['\-]+$"), ''))
-        .where((w) => w.length >= 3 && !_stopwords.contains(w));
-    return _sorted(_count(words), limit: limit);
-  }
+class ReportPage<T> {
+  final List<T> items;
+  final int total;
+  final int? nextOffset;
+  const ReportPage(this.items, this.total, this.nextOffset);
 }
 
 class ReportService {
-  static FirebaseFirestore get _db => FirebaseFirestore.instance;
-  static const _maxLogs = 2000;
+  static const ageGroups = ['17 and below', '18-24', '25-34', '35-44', '45-59', '60 and above', 'Not specified'];
+  static const designations = ['Student', 'Faculty', 'Herbalist', 'Farmer', 'Health worker', 'Others'];
+  static const _timeout = Duration(seconds: 60);
 
-  static DateTime? rangeStart(ReportRange range, DateTime now) {
-    switch (range) {
-      case ReportRange.last7Days:
-        return now.subtract(const Duration(days: 7));
-      case ReportRange.last30Days:
-        return now.subtract(const Duration(days: 30));
-      case ReportRange.allTime:
-        return null;
-    }
-  }
-
-  static Future<UsageReport> load(ReportRange range) async {
-    final now = DateTime.now();
-    final start = rangeStart(range, now);
-
-    final usersSnap = await _db.collection('users').get();
-    final users = usersSnap.docs.map((d) {
-      final data = d.data();
-      final designation = (data['designation'] as String?) ?? 'Not specified';
-      final other = (data['designationOther'] as String?) ?? '';
-      return ReportUser(
-        name: (data['name'] as String?) ?? '',
-        age: (data['age'] as num?)?.toInt(),
-        designation: designation == 'Others' && other.isNotEmpty ? 'Others ($other)' : designation,
-        createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      );
-    }).toList()
-      ..sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
-
-    Query<Map<String, dynamic>> query = _db.collection('chat_logs');
-    if (start != null) {
-      query = query.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start));
-    }
-    final logsSnap = await query.orderBy('createdAt', descending: true).limit(_maxLogs).get();
-    final logs = logsSnap.docs.map((d) {
-      final data = d.data();
-      List<String> strings(Object? v) => ((v as List<dynamic>?) ?? []).map((e) => '$e').toList();
-      return ReportLog(
-        createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-        uid: (data['uid'] as String?) ?? '',
-        userName: (data['userName'] as String?) ?? '',
-        age: (data['age'] as num?)?.toInt(),
-        designation: (data['designation'] as String?) ?? 'Not specified',
-        message: (data['message'] as String?) ?? '',
-        detectedSymptoms: strings(data['detectedSymptoms']),
-        recommendedHerbs: strings(data['recommendedHerbs']),
-        source: (data['source'] as String?) ?? 'chatbot',
-      );
-    }).toList();
-
-    return UsageReport(range: range, generatedAt: now, users: users, logs: logs);
-  }
+  static String rangeKey(ReportRange r) =>
+      {ReportRange.last7Days: '7d', ReportRange.last30Days: '30d', ReportRange.allTime: 'all'}[r]!;
 
   static String rangeLabel(ReportRange range) {
     switch (range) {
@@ -215,6 +141,77 @@ class ReportService {
     }
   }
 
+  static Future<Map<String, String>> _headers() async {
+    final token = await FirebaseAuthService.getIdToken();
+    if (token == null) throw Exception('Not signed in');
+    return {'Authorization': 'Bearer $token'};
+  }
+
+  static Future<http.Response> _get(String path, Map<String, String> query, {Duration? timeout}) async {
+    final uri = Uri.parse('${AppConstants.apiBaseUrl}$path').replace(queryParameters: query);
+    final response = await http.get(uri, headers: await _headers()).timeout(timeout ?? _timeout);
+    if (response.statusCode != 200) {
+      throw Exception('Report request $path failed (${response.statusCode})');
+    }
+    return response;
+  }
+
+  static Future<ReportSummary> fetchSummary(ReportRange range) async {
+    final response = await _get('/admin/report/summary', {'range': rangeKey(range)});
+    return ReportSummary.fromJson(range, jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  static Future<ReportPage<ReportUser>> fetchUsers({
+    String query = '',
+    String designation = '',
+    String ageGroup = '',
+    int offset = 0,
+  }) async {
+    final response = await _get('/admin/report/users', {
+      'q': query,
+      'designation': designation,
+      'ageGroup': ageGroup,
+      'offset': '$offset',
+    });
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return ReportPage(
+      (data['items'] as List<dynamic>).map((e) => ReportUser.fromJson(e as Map<String, dynamic>)).toList(),
+      (data['total'] as num).toInt(),
+      (data['nextOffset'] as num?)?.toInt(),
+    );
+  }
+
+  static Future<ReportPage<ReportLog>> fetchLogs({
+    required ReportRange range,
+    String query = '',
+    String source = '',
+    String designation = '',
+    int offset = 0,
+  }) async {
+    final response = await _get('/admin/report/logs', {
+      'range': rangeKey(range),
+      'q': query,
+      'source': source,
+      'designation': designation,
+      'offset': '$offset',
+    });
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return ReportPage(
+      (data['items'] as List<dynamic>).map((e) => ReportLog.fromJson(e as Map<String, dynamic>)).toList(),
+      (data['total'] as num).toInt(),
+      (data['nextOffset'] as num?)?.toInt(),
+    );
+  }
+
+  /// Full data (Summary, Users, Chatbot Logs, Checklist Logs) as .xlsx. The
+  /// server records the export in the admin activity log.
+  static Future<Uint8List> downloadExcel(ReportRange range) async {
+    final response = await _get('/admin/report/export.xlsx', {'range': rangeKey(range)},
+        timeout: const Duration(seconds: 120));
+    debugPrint('Excel export: ${response.bodyBytes.length} bytes');
+    return response.bodyBytes;
+  }
+
   static String formatDate(DateTime? d, {bool withTime = false}) {
     if (d == null) return '-';
     String two(int n) => n.toString().padLeft(2, '0');
@@ -222,60 +219,56 @@ class ReportService {
     return withTime ? '$date ${two(d.hour)}:${two(d.minute)}' : date;
   }
 
-  /// The built-in PDF fonts only cover Latin-1; replace anything else
-  /// (emoji, symbols) so user-typed text never breaks the export.
-  static String _pdfSafe(String s) =>
-      s.replaceAll(RegExp(r'[^ -~ -ÿ\n]'), '?');
+  /// The built-in PDF fonts only cover Latin-1; replace anything else.
+  static String _pdfSafe(String s) => s.replaceAll(RegExp(r'[^ -~ -ÿ\n]'), '?');
 
-  static Future<Uint8List> buildPdf(UsageReport report, {required String generatedBy}) async {
+  /// A short summary PDF (a few pages, whatever the number of users). The
+  /// full user list and activity log are in the Excel export.
+  static Future<Uint8List> buildPdf(ReportSummary r, {required String generatedBy}) async {
     final doc = pw.Document(title: 'HerbAI Usage Report', author: 'HerbAI');
     final green = PdfColor.fromHex('#2E7D32');
+    final headerStyle = pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
+    const cellStyle = pw.TextStyle(fontSize: 10);
 
     pw.Widget heading(String text) => pw.Padding(
           padding: const pw.EdgeInsets.only(top: 14, bottom: 6),
           child: pw.Text(text, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: green)),
         );
 
-    pw.Widget countTable(String label, List<MapEntry<String, int>> rows, int total) {
-      if (rows.isEmpty) return pw.Text('No data for this period.', style: const pw.TextStyle(fontSize: 10));
+    pw.Widget countTable(String label, List<CountRow> rows, int total) {
+      if (rows.isEmpty) return pw.Text('No data for this period.', style: cellStyle);
       return pw.TableHelper.fromTextArray(
         headers: [label, 'Count', 'Percent'],
         data: [
-          for (final r in rows)
-            [_pdfSafe(r.key), '${r.value}', total == 0 ? '-' : '${(r.value * 100 / total).toStringAsFixed(1)}%'],
+          for (final row in rows)
+            [_pdfSafe(row.label), '${row.count}', total == 0 ? '-' : '${(row.count * 100 / total).toStringAsFixed(1)}%'],
         ],
-        headerStyle: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+        headerStyle: headerStyle,
         headerDecoration: pw.BoxDecoration(color: green),
-        cellStyle: const pw.TextStyle(fontSize: 10),
+        cellStyle: cellStyle,
         cellAlignments: {1: pw.Alignment.centerRight, 2: pw.Alignment.centerRight},
       );
     }
 
-    pw.Widget groupTable(String label, Map<String, List<MapEntry<String, int>>> groups) {
-      if (groups.isEmpty) return pw.Text('No data for this period.', style: const pw.TextStyle(fontSize: 10));
+    pw.Widget groupTable(String label, List<GroupTop> groups) {
+      if (groups.isEmpty) return pw.Text('No data for this period.', style: cellStyle);
       return pw.TableHelper.fromTextArray(
         headers: [label, 'Top symptom concerns'],
         data: [
-          for (final g in groups.entries)
-            [_pdfSafe(g.key), g.value.map((e) => '${e.key} (${e.value})').join(', ')],
+          for (final g in groups) [_pdfSafe(g.group), g.top.map((e) => '${e.label} (${e.count})').join(', ')],
         ],
-        headerStyle: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+        headerStyle: headerStyle,
         headerDecoration: pw.BoxDecoration(color: green),
-        cellStyle: const pw.TextStyle(fontSize: 10),
+        cellStyle: cellStyle,
         columnWidths: {0: const pw.FlexColumnWidth(1), 1: const pw.FlexColumnWidth(3)},
       );
     }
 
-    final concerns = report.topConcerns();
-    final concernTotal = report.logs.fold<int>(0, (n, l) => n + l.detectedSymptoms.length);
-    final recent = report.messageLogs.take(100).toList();
+    final activeTrend = r.trend.where((t) => t.total > 0).toList();
 
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(32),
-      header: (context) => context.pageNumber == 1
-          ? pw.SizedBox()
-          : pw.Text('HerbAI Usage Report', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
       footer: (context) => pw.Align(
         alignment: pw.Alignment.centerRight,
         child: pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
@@ -287,76 +280,53 @@ class ReportService {
         pw.Text('AI-Driven Integration of Ethnobotanical Knowledge: A Mobile System for Local Herbal Plant Recommendations',
             style: const pw.TextStyle(fontSize: 10)),
         pw.SizedBox(height: 8),
-        pw.Text('Chatbot activity period: ${rangeLabel(report.range)}', style: const pw.TextStyle(fontSize: 10)),
-        pw.Text('Generated: ${formatDate(report.generatedAt, withTime: true)} by ${_pdfSafe(generatedBy)}',
+        pw.Text('Period: ${rangeLabel(r.range)}', style: const pw.TextStyle(fontSize: 10)),
+        pw.Text('Generated: ${formatDate(r.generatedAt, withTime: true)} by ${_pdfSafe(generatedBy)}',
             style: const pw.TextStyle(fontSize: 10)),
         heading('Summary'),
         pw.TableHelper.fromTextArray(
           headers: ['Measure', 'Value'],
           data: [
-            ['Registered users (all time)', '${report.users.length}'],
-            ['Chatbot messages in period', '${report.messageLogs.length}'],
-            ['Checklist searches in period (Select Your Symptoms)', '${report.checklistLogs.length}'],
-            ['Users who used the system in period (chatbot or checklist)', '${report.activeUsers}'],
+            ['Registered users (all time)', '${r.registeredUsers}'],
+            ['Active users in period (chatbot or checklist)', '${r.activeUsers}'],
+            ['Chatbot messages in period', '${r.chatMessages}'],
+            ['Checklist searches in period', '${r.checklistSearches}'],
           ],
-          headerStyle: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+          headerStyle: headerStyle,
           headerDecoration: pw.BoxDecoration(color: green),
-          cellStyle: const pw.TextStyle(fontSize: 10),
+          cellStyle: cellStyle,
         ),
         heading('1. Who uses the system: users by designation'),
-        countTable('Designation', report.usersByDesignation, report.users.length),
+        countTable('Designation', r.usersByDesignation, r.registeredUsers),
         heading('2. Who uses the system: users by age group'),
-        countTable('Age group', report.usersByAgeGroup, report.users.length),
+        countTable('Age group', r.usersByAgeGroup, r.registeredUsers),
         heading('3. Most common symptom concerns (chatbot and checklist)'),
-        countTable('Symptom', concerns, concernTotal),
+        countTable('Symptom', r.topConcerns, r.concernTotal),
         heading('4. Symptom concerns by designation'),
-        groupTable('Designation', report.concernsByDesignation),
+        groupTable('Designation', r.concernsByDesignation),
         heading('5. Symptom concerns by age group'),
-        groupTable('Age group', report.concernsByAgeGroup),
+        groupTable('Age group', r.concernsByAgeGroup),
         heading('6. Most frequent words typed in the chatbot'),
-        countTable('Word', report.topWords(), report.messageLogs.length),
+        countTable('Word', r.topWords, r.chatMessages),
         heading('7. Most recommended herbs'),
-        countTable('Herb', report.topHerbs(), report.logs.where((l) => l.recommendedHerbs.isNotEmpty).length),
-        heading('8. Registered users'),
-        pw.TableHelper.fromTextArray(
-          headers: ['Name', 'Age', 'Designation', 'Registered'],
-          data: [
-            for (final u in report.users)
-              [_pdfSafe(u.name), u.age?.toString() ?? '-', _pdfSafe(u.designation), formatDate(u.createdAt)],
-          ],
-          headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-          headerDecoration: pw.BoxDecoration(color: green),
-          cellStyle: const pw.TextStyle(fontSize: 9),
-        ),
-        heading('9. Chatbot activity log (latest ${recent.length})'),
-        pw.TableHelper.fromTextArray(
-          headers: ['Date', 'User', 'Designation', 'Typed message', 'Detected symptoms'],
-          data: [
-            for (final l in recent)
-              [
-                formatDate(l.createdAt, withTime: true),
-                _pdfSafe(l.userName),
-                _pdfSafe(l.designation),
-                _pdfSafe(l.message),
-                l.detectedSymptoms.join(', '),
-              ],
-          ],
-          headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-          headerDecoration: pw.BoxDecoration(color: green),
-          cellStyle: const pw.TextStyle(fontSize: 8),
-          columnWidths: {
-            0: const pw.FlexColumnWidth(1.3),
-            1: const pw.FlexColumnWidth(1.3),
-            2: const pw.FlexColumnWidth(1.2),
-            3: const pw.FlexColumnWidth(3),
-            4: const pw.FlexColumnWidth(1.8),
-          },
-        ),
+        countTable('Herb', r.topHerbs, r.topHerbs.fold(0, (n, e) => n + e.count)),
+        heading('8. Activity over time'),
+        activeTrend.isEmpty
+            ? pw.Text('No activity in this period.', style: cellStyle)
+            : pw.TableHelper.fromTextArray(
+                headers: [r.range == ReportRange.allTime ? 'Month' : 'Day', 'Chatbot messages', 'Checklist searches'],
+                data: [for (final t in activeTrend) [t.label, '${t.chatbot}', '${t.checklist}']],
+                headerStyle: headerStyle,
+                headerDecoration: pw.BoxDecoration(color: green),
+                cellStyle: cellStyle,
+                cellAlignments: {1: pw.Alignment.centerRight, 2: pw.Alignment.centerRight},
+              ),
         pw.SizedBox(height: 12),
         pw.Text(
-          'Note: Symptom concerns are the symptoms the HerbAI chatbot detected in users\' messages plus the symptoms '
-          'users picked in the Select Your Symptoms checklist. '
-          'Herb recommendations come from the HerbAI XGBoost model. For educational and research use only.',
+          'The complete list of users and every chatbot/checklist record are in the Excel export '
+          '(Usage Reports > Excel). Symptom concerns are the symptoms detected in chatbot messages plus those '
+          'picked in the Select Your Symptoms checklist. Herb recommendations come from the HerbAI XGBoost model. '
+          'For educational and research use only.',
           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
         ),
       ],
